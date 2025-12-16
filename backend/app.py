@@ -18,9 +18,17 @@ def create_app():
     db_senha = '8sLP63XU!5BPRt.' 
     db_host = 'avelarsecurity.mysql.pythonanywhere-services.com'
     db_nome = 'avelarsecurity$avelar_system'
+    
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{db_usuario}:{db_senha}@{db_host}/{db_nome}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-    app.config['SQLALCHEMY_POOL_RECYCLE'] = 299
+    
+    # CORREÇÃO DO ERRO DE DESCONEXÃO (4031)
+    # pool_recycle: Renova a conexão a cada 280 segundos (antes do limite de 300s do servidor)
+    # pool_pre_ping: Testa a conexão antes de usar. Se caiu, reconecta automaticamente.
+    app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+        'pool_recycle': 280,
+        'pool_pre_ping': True,
+    }
 
     # PASTA PARA UPLOADS
     basedir = os.path.abspath(os.path.dirname(__file__))
@@ -45,15 +53,23 @@ def create_app():
     # --- INJETOR DE CONFIGURAÇÃO ---
     @app.context_processor
     def inject_config():
-        conf = Configuracao.query.first()
-        if not conf:
+        try:
+            conf = Configuracao.query.first()
+            if not conf:
+                return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
+            return dict(sistema=conf)
+        except Exception:
+            # Em caso de erro fatal no banco, retorna padrão para não quebrar o login
             return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
-        return dict(sistema=conf)
 
-    # --- PWA SERVICE WORKER (NOVO) ---
+    # --- PWA SERVICE WORKER & OFFLINE ---
     @app.route('/service-worker.js')
     def service_worker():
         return send_from_directory(app.static_folder, 'service-worker.js', mimetype='application/javascript')
+
+    @app.route('/offline')
+    def offline():
+        return render_template('offline.html')
 
     # --- ROTA DE CONFIGURAÇÕES ---
     @app.route('/configuracoes', methods=['GET', 'POST'])

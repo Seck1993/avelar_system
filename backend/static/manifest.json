@@ -7,6 +7,7 @@
   "theme_color": "#d32f2f",
   "description": "Sistema de Gestão Avelar Security",
   "orientation": "portrait-primary",
+  "scope": "/",
   "icons": [
     {
       "src": "/static/img/Logo.png",
