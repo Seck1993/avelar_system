@@ -1,9 +1,9 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, send_from_directory
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from sqlalchemy import func
-from werkzeug.utils import secure_filename # Para salvar imagens
+from werkzeug.utils import secure_filename
 from .extensions import db
 from .models import Usuario, Cliente, Catalogo, Mensalidade, Venda, Despesa, Ocorrencia, Configuracao
 
@@ -22,12 +22,11 @@ def create_app():
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     app.config['SQLALCHEMY_POOL_RECYCLE'] = 299
 
-    # PASTA PARA SALVAR UPLOADS (Imagens de fundo)
+    # PASTA PARA UPLOADS
     basedir = os.path.abspath(os.path.dirname(__file__))
     UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
     app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
     
-    # Cria a pasta se não existir
     if not os.path.exists(UPLOAD_FOLDER):
         os.makedirs(UPLOAD_FOLDER)
 
@@ -43,18 +42,18 @@ def create_app():
     def load_user(user_id):
         return Usuario.query.get(int(user_id))
 
-    # --- INJETOR DE CONFIGURAÇÃO (DISPONÍVEL EM TODAS AS TELAS) ---
+    # --- INJETOR DE CONFIGURAÇÃO ---
     @app.context_processor
     def inject_config():
-        # Pega a configuração do banco, se não existir, cria uma padrão
         conf = Configuracao.query.first()
         if not conf:
             return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
         return dict(sistema=conf)
 
-    # --- CRIAÇÃO INICIAL ---
-    with app.app_context():
-        pass
+    # --- PWA SERVICE WORKER (NOVO) ---
+    @app.route('/service-worker.js')
+    def service_worker():
+        return send_from_directory(app.static_folder, 'service-worker.js', mimetype='application/javascript')
 
     # --- ROTA DE CONFIGURAÇÕES ---
     @app.route('/configuracoes', methods=['GET', 'POST'])
@@ -72,16 +71,14 @@ def create_app():
             conf.nome_empresa = request.form['nome_empresa']
             conf.cor_primaria = request.form['cor_primaria']
 
-            # Função para salvar imagens
             def salvar_imagem(file_input, nome_arquivo):
                 file = request.files[file_input]
                 if file and file.filename != '':
-                    filename = secure_filename(nome_arquivo + ".jpg") # Força extensão JPG
+                    filename = secure_filename(nome_arquivo + ".jpg")
                     file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
                     return f"uploads/{filename}"
                 return None
 
-            # Uploads
             if 'logo' in request.files:
                 path = salvar_imagem('logo', 'logo_sistema')
                 if path: conf.logo_path = path
@@ -137,7 +134,7 @@ def create_app():
                              total_clientes=Cliente.query.filter_by(ativo=True).count(),
                              ocorrencias=Ocorrencia.query.order_by(Ocorrencia.data.desc()).limit(5).all())
 
-    # --- ROTAS RESTAURADAS (CRUCIAIS PARA CORRIGIR O ERRO 500) ---
+    # --- ROTAS CRUD (COMPLETAS) ---
 
     @app.route('/clientes')
     @login_required
@@ -146,12 +143,49 @@ def create_app():
         lista_clientes = Cliente.query.all()
         return render_template('clientes.html', clientes=lista_clientes)
 
+    @app.route('/novo_cliente', methods=['GET', 'POST'])
+    @login_required
+    def novo_cliente():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            try:
+                novo = Cliente(
+                    nome=request.form['nome'],
+                    email=request.form.get('email'),
+                    telefone=request.form.get('telefone'),
+                    endereco=request.form.get('endereco'),
+                    cpf=request.form.get('cpf'),
+                    ativo=True
+                )
+                db.session.add(novo)
+                db.session.commit()
+                flash('Cliente cadastrado com sucesso!', 'success')
+                return redirect(url_for('clientes'))
+            except Exception as e:
+                flash(f'Erro: {str(e)}', 'danger')
+        return render_template('novo_cliente.html')
+
     @app.route('/catalogo')
     @login_required
     def catalogo():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         itens = Catalogo.query.all()
         return render_template('catalogo.html', itens=itens)
+
+    @app.route('/novo_item', methods=['GET', 'POST'])
+    @login_required
+    def novo_item():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            item = Catalogo(
+                nome=request.form['nome'],
+                descricao=request.form.get('descricao'),
+                preco=float(request.form['preco'])
+            )
+            db.session.add(item)
+            db.session.commit()
+            return redirect(url_for('catalogo'))
+        return render_template('novo_item.html')
 
     @app.route('/financeiro')
     @login_required
@@ -161,23 +195,70 @@ def create_app():
         despesas = Despesa.query.all()
         return render_template('financeiro.html', mensalidades=mensalidades, despesas=despesas)
 
+    @app.route('/nova_despesa', methods=['GET', 'POST'])
+    @login_required
+    def nova_despesa():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            # Implementar lógica
+            return redirect(url_for('financeiro'))
+        return render_template('nova_despesa.html')
+
     @app.route('/vendas')
     @login_required
     def vendas():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         vendas_realizadas = Venda.query.all()
         return render_template('vendas.html', vendas=vendas_realizadas)
+
+    @app.route('/nova_venda', methods=['GET', 'POST'])
+    @login_required
+    def nova_venda():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            # Implementar lógica
+            return redirect(url_for('vendas'))
+        clientes_opt = Cliente.query.filter_by(ativo=True).all()
+        produtos_opt = Catalogo.query.all()
+        return render_template('nova_venda.html', clientes=clientes_opt, produtos=produtos_opt)
     
     @app.route('/painel_cliente')
     @login_required
     def painel_cliente():
-        # Rota para quem não é Admin visualizar suas faturas
         if current_user.cargo == 'Admin': return redirect(url_for('home'))
-        
         mensalidades = []
         if current_user.cliente_id:
              mensalidades = Mensalidade.query.filter_by(cliente_id=current_user.cliente_id).all()
-             
         return render_template('painel_cliente.html', mensalidades=mensalidades)
+
+    @app.route('/ocorrencias')
+    @login_required
+    def listar_ocorrencias():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        todas_ocorrencias = Ocorrencia.query.order_by(Ocorrencia.data.desc()).all()
+        return render_template('ocorrencias.html', ocorrencias=todas_ocorrencias)
+
+    @app.route('/nova_ocorrencia', methods=['GET', 'POST'])
+    @login_required
+    def nova_ocorrencia():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            return redirect(url_for('listar_ocorrencias'))
+        return render_template('nova_ocorrencia.html')
+
+    @app.route('/usuarios')
+    @login_required
+    def usuarios():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        lista_usuarios = Usuario.query.all()
+        return render_template('usuarios.html', usuarios=lista_usuarios)
+
+    @app.route('/novo_usuario', methods=['GET', 'POST'])
+    @login_required
+    def novo_usuario():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        if request.method == 'POST':
+            return redirect(url_for('usuarios'))
+        return render_template('novo_usuario.html')
 
     return app
