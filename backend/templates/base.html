@@ -2,25 +2,62 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Avelar System</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ sistema.nome_empresa }} | Gestão</title>
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
-    <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/Logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ url_for('static', filename=sistema.logo_path) }}">
+
+    <style>
+        :root {
+            /* Pega a cor do banco. Se não tiver, usa Vermelho Padrão */
+            --primary-red: {{ sistema.cor_primaria if sistema.cor_primaria else '#d32f2f' }};
+        }
+
+        body {
+            color: #fff;
+            font-family: 'Poppins', sans-serif;
+            overflow-x: hidden;
+            /* Lógica do Fundo do Dashboard */
+            {% if sistema.fundo_dashboard %}
+            background: url("{{ url_for('static', filename=sistema.fundo_dashboard) }}") no-repeat center center fixed;
+            background-size: cover;
+            {% else %}
+            background-color: #0a0a0a;
+            {% endif %}
+        }
+
+        /* Camada escura sobre a imagem de fundo para ler o texto */
+        #content {
+            background: rgba(10, 10, 10, 0.92); /* Transparência suave */
+            min-height: 100vh;
+            transition: all 0.3s;
+            width: 100%;
+        }
+
+        /* Sidebar também usa transparência para integrar com o fundo */
+        #sidebar {
+            background: rgba(0, 0, 0, 0.95);
+            border-right: 1px solid #333;
+        }
+    </style>
 </head>
 <body>
 
 <div class="wrapper">
     <nav id="sidebar">
         <div class="sidebar-header">
-            <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" class="logo-custom">
-            <h4 class="brand-title">AVELAR</h4>
-            <span class="brand-subtitle">SEGURANÇA PATRIMONIAL</span>
+            <img src="{{ url_for('static', filename=sistema.logo_path) }}" alt="Logo" class="logo-custom">
+            
+            <h4 class="brand-title">{{ sistema.nome_empresa }}</h4>
+            <span class="brand-subtitle">Gestão Integrada</span>
         </div>
 
         <ul class="list-unstyled components">
             <li class="{{ 'active' if request.endpoint == 'home' else '' }}">
-                <a href="{{ url_for('home') }}"><i class="fas fa-chart-line"></i> Painel Geral</a>
+                <a href="{{ url_for('home') }}"><i class="fas fa-chart-line"></i> Visão Geral</a>
             </li>
 
             <li>
@@ -42,7 +79,7 @@
                 <ul class="collapse list-unstyled" id="menuComercial">
                     <li><a href="{{ url_for('vendas') }}">Vendas & Instalações</a></li>
                     <li><a href="{{ url_for('catalogo') }}">Tabela de Preços</a></li>
-                    <li><a href="#">Gerenciar Leads</a></li> </ul>
+                </ul>
             </li>
 
             <li>
@@ -51,19 +88,6 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuFinanceiro">
                     <li><a href="{{ url_for('financeiro') }}">Fluxo de Caixa</a></li>
-                    <li><a href="#">Contas a Receber</a></li>
-                    <li><a href="#">Despesas Fixas</a></li>
-                </ul>
-            </li>
-
-            <li>
-                <a href="#menuRH" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
-                    <i class="fas fa-users"></i> Efetivo & RH
-                </a>
-                <ul class="collapse list-unstyled" id="menuRH">
-                    <li><a href="#">Lista de Colaboradores</a></li>
-                    <li><a href="#">Escala de Serviço</a></li>
-                    <li><a href="#">Folha de Pagamento</a></li>
                 </ul>
             </li>
 
@@ -73,39 +97,57 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuCadastros">
                     <li><a href="{{ url_for('novo_cliente') }}">Novo Cliente</a></li>
-                    <li><a href="#">Novo Colaborador</a></li>
-                    <li><a href="#">Novo Veículo/Frota</a></li>
                 </ul>
             </li>
 
-            <li>
-                <a href="#">
-                    <i class="fas fa-boxes"></i> Patrimônio & Estoque
-                </a>
-            </li>
-
             <li class="mt-4 border-top border-secondary pt-2">
-                <a href="#"><i class="fas fa-cog"></i> Configurações</a>
+                <a href="{{ url_for('configuracoes') }}">
+                    <i class="fas fa-cog"></i> Configurar Sistema
+                </a>
             </li>
         </ul>
     </nav>
 
     <div id="content">
         <div class="navbar-top">
-            <span style="font-weight: 500; font-size: 1.1rem;">Sistema Integrado de Gestão</span>
+            <button type="button" id="sidebarCollapse" class="btn btn-outline-secondary btn-sm text-white d-md-none">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <span class="ms-3 fw-bold d-none d-md-block">Painel Administrativo</span>
             
-            <div style="display: flex; align-items: center;">
+            <div style="display: flex; align-items: center; margin-left: auto;">
                 <div style="text-align: right; margin-right: 15px;">
-                    <div style="font-weight: bold; color: white;">Administrador</div>
-                    <div style="font-size: 0.8rem; color: #b0b0b0;">Avelar S.</div>
+                    <div style="font-weight: bold; color: white;">{{ current_user.nome }}</div>
+                    <div style="font-size: 0.8rem; color: #b0b0b0;">Administrador</div>
                 </div>
-                <div style="width: 40px; height: 40px; background-color: var(--primary-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white; box-shadow: 0 0 10px rgba(211, 47, 47, 0.5);">
-                    A
+                <div class="dropdown">
+                    <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
+                        <div style="width: 40px; height: 40px; background-color: var(--primary-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
+                            A
+                        </div>
+                    </a>
+                    <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow">
+                        <li><a class="dropdown-item" href="{{ url_for('configuracoes') }}">Personalizar</a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item text-danger" href="{{ url_for('logout') }}">Sair</a></li>
+                    </ul>
                 </div>
             </div>
         </div>
 
         <div class="page-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
             {% block content %}
             {% endblock %}
         </div>
@@ -113,5 +155,12 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    // Script para mobile: Abre e fecha o menu
+    document.getElementById('sidebarCollapse')?.addEventListener('click', function () {
+        document.getElementById('sidebar').classList.toggle('active');
+    });
+</script>
+
 </body>
 </html>

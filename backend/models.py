@@ -1,24 +1,36 @@
 from datetime import datetime
+from flask_login import UserMixin
+from werkzeug.security import generate_password_hash, check_password_hash
 from .extensions import db
 
-# --- ACESSO ---
-class Usuario(db.Model):
+# --- TABELA DE USUÁRIOS ---
+class Usuario(UserMixin, db.Model):
     __tablename__ = 'usuarios'
     id = db.Column(db.Integer, primary_key=True)
-    nome = db.Column(db.String(100), nullable=False)
     email = db.Column(db.String(100), unique=True, nullable=False)
-    senha = db.Column(db.String(100))
+    senha_hash = db.Column(db.String(256)) # Aumentei o tamanho por segurança
+    nome = db.Column(db.String(100))
+    cargo = db.Column(db.String(50))
+    cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'), nullable=True)
 
-# --- GESTÃO DE PREÇOS (Substitui planilha Tabela de Preço) ---
-class Catalogo(db.Model):
-    __tablename__ = 'catalogo'
+    def set_senha(self, senha):
+        # MUDANÇA AQUI: Forçando método compatível
+        self.senha_hash = generate_password_hash(senha, method='pbkdf2:sha256')
+
+    def check_senha(self, senha):
+        return check_password_hash(self.senha_hash, senha)
+
+# --- TABELA DE PERSONALIZAÇÃO ---
+class Configuracao(db.Model):
+    __tablename__ = 'configuracao'
     id = db.Column(db.Integer, primary_key=True)
-    tipo = db.Column(db.String(50)) # Produto ou Serviço
-    item = db.Column(db.String(150), nullable=False) # Ex: DVR 4 Canais, Câmera Wifi
-    descricao = db.Column(db.String(200)) # Detalhes técnicos
-    valor = db.Column(db.Float, nullable=False)
+    nome_empresa = db.Column(db.String(100), default="Avelar Security")
+    cor_primaria = db.Column(db.String(20), default="#d32f2f")
+    logo_path = db.Column(db.String(200), default="img/Logo.png")
+    fundo_login = db.Column(db.String(200), default="")
+    fundo_dashboard = db.Column(db.String(200), default="")
 
-# --- CLIENTES & CONTRATOS (Substitui Cerro Alegre, Joao Alves e Ronda Virtual) ---
+# --- TABELAS DO SISTEMA ---
 class Cliente(db.Model):
     __tablename__ = 'clientes'
     id = db.Column(db.Integer, primary_key=True)
@@ -27,51 +39,43 @@ class Cliente(db.Model):
     bairro = db.Column(db.String(100)) 
     cpf = db.Column(db.String(20))
     telefone = db.Column(db.String(30))
-    
-    # Dados do Contrato (Ronda Virtual)
-    app_monitoramento = db.Column(db.String(50)) # ISIC Lite, Mibo, Intelbras
+    app_monitoramento = db.Column(db.String(50))
     qtd_cameras = db.Column(db.Integer, default=0)
-    login_app = db.Column(db.String(100)) # Para facilitar suporte
-    senha_app = db.Column(db.String(100))
-    
-    # Financeiro Recorrente
     valor_mensal = db.Column(db.Float, default=0.0)
-    dia_vencimento = db.Column(db.Integer)
     ativo = db.Column(db.Boolean, default=True)
     
     mensalidades = db.relationship('Mensalidade', backref='cliente', lazy=True)
     vendas = db.relationship('Venda', backref='cliente', lazy=True)
     ocorrencias = db.relationship('Ocorrencia', backref='cliente', lazy=True)
+    usuario_login = db.relationship('Usuario', backref='dados_cliente', uselist=False)
 
-# --- FINANCEIRO (Vendas Avulsas e Mensalidades) ---
 class Mensalidade(db.Model):
     __tablename__ = 'mensalidades'
     id = db.Column(db.Integer, primary_key=True)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     mes_referencia = db.Column(db.String(20))
     valor = db.Column(db.Float)
-    status = db.Column(db.String(20), default='Pendente') # Pago, Pendente
+    status = db.Column(db.String(20), default='Pendente')
     data_pagamento = db.Column(db.Date)
 
-class Venda(db.Model): # Substitui planilha Vendas (Instalações)
+class Venda(db.Model):
     __tablename__ = 'vendas'
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.Date, default=datetime.utcnow)
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
-    descricao = db.Column(db.String(200)) # Ex: Instalação Kit 4 Câmeras
+    descricao = db.Column(db.String(200))
     valor_total = db.Column(db.Float)
-    forma_pagamento = db.Column(db.String(50)) # 3x no Cartão, À vista
+    forma_pagamento = db.Column(db.String(50))
     status = db.Column(db.String(20), default='Concluído')
 
-# --- DESPESAS (Substitui Gasto Diario/Empresa/Pessoal) ---
 class Despesa(db.Model):
     __tablename__ = 'despesas'
     id = db.Column(db.Integer, primary_key=True)
     data = db.Column(db.Date, default=datetime.utcnow)
-    categoria = db.Column(db.String(100)) # Combustível, Peças, Pessoal
+    categoria = db.Column(db.String(100))
     descricao = db.Column(db.String(200))
     valor = db.Column(db.Float, nullable=False)
-    tipo = db.Column(db.String(20)) # Empresa ou Pessoal
+    tipo = db.Column(db.String(20))
 
 class Ocorrencia(db.Model):
     __tablename__ = 'ocorrencias'
@@ -80,3 +84,11 @@ class Ocorrencia(db.Model):
     cliente_id = db.Column(db.Integer, db.ForeignKey('clientes.id'))
     descricao = db.Column(db.Text)
     responsavel = db.Column(db.String(100))
+    
+class Catalogo(db.Model):
+    __tablename__ = 'catalogo'
+    id = db.Column(db.Integer, primary_key=True)
+    tipo = db.Column(db.String(50))
+    item = db.Column(db.String(150))
+    descricao = db.Column(db.String(200))
+    valor = db.Column(db.Float)

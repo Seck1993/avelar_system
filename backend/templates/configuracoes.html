@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+    <div class="col-md-8 mx-auto">
+        <div class="card-custom">
+            <h3><i class="fas fa-paint-brush"></i> Personalização do Sistema</h3>
+            <hr>
+            <form method="POST" enctype="multipart/form-data">
+                <div class="mb-3">
+                    <label>Nome da Empresa (Aparece no menu)</label>
+                    <input type="text" name="nome_empresa" class="form-control" value="{{ conf.nome_empresa }}">
+                </div>
+
+                <div class="mb-3">
+                    <label>Cor Principal do Sistema</label>
+                    <input type="color" name="cor_primaria" class="form-control form-control-color" value="{{ conf.cor_primaria }}" title="Escolha a cor">
+                </div>
+
+                <hr>
+                <h5 class="mb-3">Imagens de Fundo</h5>
+
+                <div class="mb-3">
+                    <label>Logotipo (Menu e Login)</label>
+                    <input type="file" name="logo" class="form-control">
+                    {% if conf.logo_path %}
+                        <small>Atual: <a href="{{ url_for('static', filename=conf.logo_path) }}" target="_blank">Ver Imagem</a></small>
+                    {% endif %}
+                </div>
+
+                <div class="mb-3">
+                    <label>Imagem de Fundo do Login</label>
+                    <input type="file" name="fundo_login" class="form-control">
+                    <small class="text-muted">Recomendado: Imagem escura ou HD (1920x1080)</small>
+                </div>
+
+                <div class="mb-3">
+                    <label>Imagem de Fundo do Dashboard</label>
+                    <input type="file" name="fundo_dashboard" class="form-control">
+                    <small class="text-muted">Esta imagem aparecerá com transparência no fundo do sistema.</small>
+                </div>
+
+                <button type="submit" class="btn btn-red w-100 mt-3">Salvar Alterações</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

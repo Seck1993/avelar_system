@@ -1,147 +1,183 @@
 import os
 from datetime import datetime
-from flask import Flask, render_template, request, redirect, url_for
+from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from sqlalchemy import func
+from werkzeug.utils import secure_filename # Para salvar imagens
 from .extensions import db
-from .models import Usuario, Cliente, Catalogo, Mensalidade, Venda, Despesa, Ocorrencia
+from .models import Usuario, Cliente, Catalogo, Mensalidade, Venda, Despesa, Ocorrencia, Configuracao
 
 def create_app():
     app = Flask(__name__)
-
-    # Configuração
-    basedir = os.path.abspath(os.path.dirname(__file__))
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + os.path.join(basedir, 'database.db')
-    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
+    # --- CONFIGURAÇÃO ---
+    app.config['SECRET_KEY'] = 'chave-secreta-avelar-123'
+    
+    # BANCO DE DADOS
+    db_usuario = 'avelarsecurity'
+    db_senha = '8sLP63XU!5BPRt.' 
+    db_host = 'avelarsecurity.mysql.pythonanywhere-services.com'
+    db_nome = 'avelarsecurity$avelar_system'
+    app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{db_usuario}:{db_senha}@{db_host}/{db_nome}'
+    app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+    app.config['SQLALCHEMY_POOL_RECYCLE'] = 299
+
+    # PASTA PARA SALVAR UPLOADS (Imagens de fundo)
+    basedir = os.path.abspath(os.path.dirname(__file__))
+    UPLOAD_FOLDER = os.path.join(basedir, 'static/uploads')
+    app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+    
+    # Cria a pasta se não existir
+    if not os.path.exists(UPLOAD_FOLDER):
+        os.makedirs(UPLOAD_FOLDER)
+
     db.init_app(app)
+    
+    # LOGIN
+    login_manager = LoginManager()
+    login_manager.login_view = 'login'
+    login_manager.login_message = "Por favor, faça login para acessar."
+    login_manager.init_app(app)
 
+    @login_manager.user_loader
+    def load_user(user_id):
+        return Usuario.query.get(int(user_id))
+
+    # --- INJETOR DE CONFIGURAÇÃO (DISPONÍVEL EM TODAS AS TELAS) ---
+    @app.context_processor
+    def inject_config():
+        # Pega a configuração do banco, se não existir, cria uma padrão
+        conf = Configuracao.query.first()
+        if not conf:
+            return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
+        return dict(sistema=conf)
+
+    # --- CRIAÇÃO INICIAL ---
     with app.app_context():
-        db.create_all()
-        # Seeding do Catálogo (Se vazio)
-        if not Catalogo.query.first():
-            items = [
-                ('Serviço', 'Monitoramento 24h', 'Acesso via App + Ronda Virtual', 100.00),
-                ('Serviço', 'Ronda Presencial', 'Ronda física no local', 65.00),
-                ('Produto', 'DVR 4 Canais', 'Intelbras HD 1T', 39.90),
-                ('Produto', 'Câmera Wi-Fi', 'Modelo Interno/Externo', 19.90),
-                ('Serviço', 'Instalação Kit 4 Câmeras', 'Mão de obra + Configuração', 450.00)
-            ]
-            for tipo, item, desc, val in items:
-                db.session.add(Catalogo(tipo=tipo, item=item, descricao=desc, valor=val))
+        pass
+
+    # --- ROTA DE CONFIGURAÇÕES ---
+    @app.route('/configuracoes', methods=['GET', 'POST'])
+    @login_required
+    def configuracoes():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        
+        conf = Configuracao.query.first()
+        if not conf:
+            conf = Configuracao()
+            db.session.add(conf)
             db.session.commit()
 
-    # --- ROTA HOME ---
+        if request.method == 'POST':
+            conf.nome_empresa = request.form['nome_empresa']
+            conf.cor_primaria = request.form['cor_primaria']
+
+            # Função para salvar imagens
+            def salvar_imagem(file_input, nome_arquivo):
+                file = request.files[file_input]
+                if file and file.filename != '':
+                    filename = secure_filename(nome_arquivo + ".jpg") # Força extensão JPG
+                    file.save(os.path.join(app.config['UPLOAD_FOLDER'], filename))
+                    return f"uploads/{filename}"
+                return None
+
+            # Uploads
+            if 'logo' in request.files:
+                path = salvar_imagem('logo', 'logo_sistema')
+                if path: conf.logo_path = path
+            
+            if 'fundo_login' in request.files:
+                path = salvar_imagem('fundo_login', 'bg_login')
+                if path: conf.fundo_login = path
+
+            if 'fundo_dashboard' in request.files:
+                path = salvar_imagem('fundo_dashboard', 'bg_dashboard')
+                if path: conf.fundo_dashboard = path
+
+            db.session.commit()
+            flash('Configurações atualizadas com sucesso!', 'success')
+            return redirect(url_for('configuracoes'))
+
+        return render_template('configuracoes.html', conf=conf)
+
+    # --- ROTAS DE AUTENTICAÇÃO ---
+    @app.route('/login', methods=['GET', 'POST'])
+    def login():
+        if request.method == 'POST':
+            email = request.form['email']
+            senha = request.form['senha']
+            user = Usuario.query.filter_by(email=email).first()
+            if user and user.check_senha(senha):
+                login_user(user)
+                return redirect(url_for('home')) if user.cargo == 'Admin' else redirect(url_for('painel_cliente'))
+            else:
+                flash('Usuário ou senha incorretos.', 'danger')
+        return render_template('login.html')
+
+    @app.route('/logout')
+    @login_required
+    def logout():
+        logout_user()
+        return redirect(url_for('login'))
+
+    # --- DASHBOARD ---
     @app.route('/')
+    @login_required
     def home():
-        now = datetime.now().strftime('%d/%m/%Y')
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         
-        # Totais para o Dashboard
-        receita_mensalidades = db.session.query(func.sum(Mensalidade.valor)).filter_by(status='Pago').scalar() or 0
-        receita_vendas = db.session.query(func.sum(Venda.valor_total)).scalar() or 0
-        receita_total = receita_mensalidades + receita_vendas
+        receita = (db.session.query(func.sum(Mensalidade.valor)).filter_by(status='Pago').scalar() or 0) + \
+                  (db.session.query(func.sum(Venda.valor_total)).scalar() or 0)
+        despesa = (db.session.query(func.sum(Despesa.valor)).filter_by(tipo='Empresa').scalar() or 0) + \
+                  (db.session.query(func.sum(Despesa.valor)).filter_by(tipo='Pessoal').scalar() or 0)
         
-        despesa_empresa = db.session.query(func.sum(Despesa.valor)).filter_by(tipo='Empresa').scalar() or 0
-        despesa_pessoal = db.session.query(func.sum(Despesa.valor)).filter_by(tipo='Pessoal').scalar() or 0
-        
-        saldo = receita_total - (despesa_empresa + despesa_pessoal)
-        total_clientes = Cliente.query.filter_by(ativo=True).count()
-        
-        ultimas_ocorrencias = Ocorrencia.query.order_by(Ocorrencia.data.desc()).limit(5).all()
-
         return render_template('index.html', 
-                             now=now,
-                             receita=receita_total,
-                             despesa=despesa_empresa,
-                             pessoal=despesa_pessoal, # Passando pessoal para o template
-                             saldo=saldo,
-                             total_clientes=total_clientes,
-                             ocorrencias=ultimas_ocorrencias)
+                             now=datetime.now().strftime('%d/%m/%Y'),
+                             receita=receita, despesa=despesa, saldo=receita-despesa,
+                             total_clientes=Cliente.query.filter_by(ativo=True).count(),
+                             ocorrencias=Ocorrencia.query.order_by(Ocorrencia.data.desc()).limit(5).all())
 
-    # --- ROTA CLIENTES ---
+    # --- ROTAS RESTAURADAS (CRUCIAIS PARA CORRIGIR O ERRO 500) ---
+
     @app.route('/clientes')
+    @login_required
     def clientes():
-        bairro = request.args.get('bairro')
-        query = Cliente.query
-        if bairro:
-            query = query.filter_by(bairro=bairro)
-        return render_template('clientes/lista.html', clientes=query.all())
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        lista_clientes = Cliente.query.all()
+        return render_template('clientes.html', clientes=lista_clientes)
 
-    @app.route('/cliente/novo', methods=['GET', 'POST'])
-    def novo_cliente():
-        if request.method == 'POST':
-            novo = Cliente(
-                nome=request.form['nome'],
-                bairro=request.form['bairro'],
-                endereco=request.form['endereco'],
-                telefone=request.form['telefone'],
-                valor_mensal=float(request.form['valor_mensal'].replace(',','.') or 0),
-                app_monitoramento=request.form.get('app'),
-                qtd_cameras=int(request.form.get('qtd_cameras') or 0)
-            )
-            db.session.add(novo)
-            db.session.commit()
-            return redirect(url_for('clientes'))
-        return render_template('clientes/novo.html')
-
-    # --- ROTA VENDAS ---
-    @app.route('/vendas', methods=['GET', 'POST'])
-    def vendas():
-        if request.method == 'POST':
-            nova_venda = Venda(
-                cliente_id=int(request.form['cliente_id']),
-                descricao=request.form['descricao'],
-                valor_total=float(request.form['valor'].replace(',','.')),
-                forma_pagamento=request.form['pagamento'],
-                data=datetime.strptime(request.form['data'], '%Y-%m-%d')
-            )
-            db.session.add(nova_venda)
-            db.session.commit()
-            return redirect(url_for('vendas'))
-            
-        vendas_lista = Venda.query.order_by(Venda.data.desc()).all()
-        clientes_lista = Cliente.query.all()
-        return render_template('vendas/index.html', vendas=vendas_lista, clientes=clientes_lista)
-
-    # --- ROTA CATALOGO ---
     @app.route('/catalogo')
+    @login_required
     def catalogo():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         itens = Catalogo.query.all()
-        return render_template('catalogo/index.html', itens=itens)
+        return render_template('catalogo.html', itens=itens)
 
-    # --- ROTA FINANCEIRO ---
-    @app.route('/financeiro', methods=['GET', 'POST'])
+    @app.route('/financeiro')
+    @login_required
     def financeiro():
-        if request.method == 'POST':
-            nova = Despesa(
-                data=datetime.strptime(request.form['data'], '%Y-%m-%d'),
-                categoria=request.form['categoria'],
-                descricao=request.form['descricao'],
-                valor=float(request.form['valor'].replace(',','.')),
-                tipo=request.form['tipo']
-            )
-            db.session.add(nova)
-            db.session.commit()
-            return redirect(url_for('financeiro'))
-            
-        despesas = Despesa.query.order_by(Despesa.data.desc()).all()
-        return render_template('financeiro/index.html', despesas=despesas)
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        mensalidades = Mensalidade.query.all()
+        despesas = Despesa.query.all()
+        return render_template('financeiro.html', mensalidades=mensalidades, despesas=despesas)
 
-    # --- ROTA OCORRÊNCIAS (RESTAURADA) ---
-    @app.route('/ocorrencias', methods=['GET', 'POST'])
-    def listar_ocorrencias():
-        if request.method == 'POST':
-            nova = Ocorrencia(
-                cliente_id=int(request.form['cliente_id']),
-                descricao=request.form['descricao'],
-                responsavel=request.form['responsavel'],
-                data=datetime.strptime(request.form['data'], '%Y-%m-%dT%H:%M')
-            )
-            db.session.add(nova)
-            db.session.commit()
-            return redirect(url_for('listar_ocorrencias'))
-
-        lista = Ocorrencia.query.order_by(Ocorrencia.data.desc()).all()
-        clientes = Cliente.query.all()
-        return render_template('ocorrencias/lista.html', ocorrencias=lista, clientes=clientes)
+    @app.route('/vendas')
+    @login_required
+    def vendas():
+        if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
+        vendas_realizadas = Venda.query.all()
+        return render_template('vendas.html', vendas=vendas_realizadas)
+    
+    @app.route('/painel_cliente')
+    @login_required
+    def painel_cliente():
+        # Rota para quem não é Admin visualizar suas faturas
+        if current_user.cargo == 'Admin': return redirect(url_for('home'))
+        
+        mensalidades = []
+        if current_user.cliente_id:
+             mensalidades = Mensalidade.query.filter_by(cliente_id=current_user.cliente_id).all()
+             
+        return render_template('painel_cliente.html', mensalidades=mensalidades)
 
     return app
