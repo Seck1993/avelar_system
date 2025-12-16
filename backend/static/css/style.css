@@ -1,0 +1,244 @@
+/* backend/static/css/style.css */
+/* Importamos a ROBOTO (Corpo) e a POPPINS (Menu/Títulos) */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600&family=Roboto:wght@300;400;500;700&display=swap');
+
+:root {
+    /* PALETA ESTRITA: PRETO, BRANCO, VERMELHO */
+    --bg-body: #0a0a0a;         
+    --bg-sidebar: #000000;      
+    --bg-card: #141414;         
+    
+    --primary-red: #d32f2f;     
+    --red-hover: #b71c1c;       
+    
+    --text-white: #ffffff;      
+    --text-menu: #e0e0e0;       /* Texto do menu mais claro/visível */
+    --text-gray: #b0b0b0;       
+    
+    --border-color: #333333;    
+}
+
+body {
+    background-color: var(--bg-body);
+    color: var(--text-white);
+    font-family: 'Roboto', sans-serif; /* Fonte padrão do corpo */
+    font-size: 0.95rem;
+    margin: 0;
+    overflow-x: hidden;
+}
+
+/* --- LAYOUT --- */
+.wrapper {
+    display: flex;
+    width: 100%;
+    align-items: stretch;
+}
+
+/* --- SIDEBAR (MENU LATERAL MELHORADO) --- */
+#sidebar {
+    min-width: 270px; /* Levemente mais largo para acomodar a fonte maior */
+    max-width: 270px;
+    background: var(--bg-sidebar);
+    color: var(--text-white);
+    border-right: 1px solid var(--border-color);
+    min-height: 100vh;
+    transition: all 0.3s;
+}
+
+/* Configuração do Logo */
+.sidebar-header {
+    padding: 25px 20px;
+    text-align: center;
+    background: #000;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.logo-custom {
+    max-width: 160px; /* Ajuste o tamanho do logo aqui */
+    width: 100%;
+    height: auto;
+    display: block;
+    margin: 0 auto 15px auto;
+}
+
+.brand-title {
+    font-family: 'Poppins', sans-serif;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-white);
+    text-transform: uppercase;
+    margin: 0;
+    letter-spacing: 2px;
+}
+.brand-subtitle {
+    font-family: 'Poppins', sans-serif;
+    font-size: 0.75rem;
+    color: var(--primary-red);
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    font-weight: 500;
+}
+
+/* --- ESTILO DOS LINKS DO MENU (A MUDANÇA ESTÁ AQUI) --- */
+#sidebar ul.components { padding: 10px 0; }
+#sidebar ul li { 
+    border-bottom: 1px solid #111; /* Divisória muito sutil */
+    margin-bottom: 2px;
+}
+
+#sidebar ul li a {
+    padding: 16px 25px; /* Mais espaço para clicar */
+    display: flex;
+    align-items: center;
+    
+    /* FONTE NOVA E MAIOR */
+    font-family: 'Poppins', sans-serif;
+    font-size: 1rem; /* Aumentado (era menor) */
+    font-weight: 500; /* Mais encorpado */
+    letter-spacing: 0.5px;
+    
+    color: var(--text-menu); /* Cor mais clara */
+    text-decoration: none;
+    transition: all 0.3s ease;
+    border-left: 5px solid transparent;
+}
+
+#sidebar ul li a:hover {
+    color: var(--text-white);
+    background-color: #1a1a1a;
+    border-left: 5px solid var(--primary-red);
+    padding-left: 30px; /* Efeito visual de movimento */
+}
+
+#sidebar ul li.active > a {
+    background-color: var(--primary-red); /* Fundo vermelho no ativo */
+    color: var(--text-white);
+    font-weight: 600;
+    border-left: 5px solid #ff6659; /* Detalhe mais claro na borda */
+    box-shadow: 0 4px 10px rgba(211, 47, 47, 0.3); /* Brilho sutil */
+}
+
+#sidebar ul li a i {
+    width: 30px;
+    font-size: 1.2rem; /* Ícone um pouco maior */
+    margin-right: 12px;
+    text-align: center;
+}
+
+/* --- CONTEÚDO --- */
+#content {
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.navbar-top {
+    padding: 15px 30px;
+    background-color: var(--bg-sidebar);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.page-content { padding: 30px; }
+
+/* --- CARDS --- */
+.card-custom {
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 25px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    transition: transform 0.2s;
+}
+
+.card-custom:hover {
+    transform: translateY(-3px);
+    border-color: #444;
+}
+
+.card-info h3 {
+    font-family: 'Poppins', sans-serif; /* Números bonitos */
+    font-size: 2.4rem;
+    font-weight: 600;
+    margin: 5px 0 0 0;
+    color: var(--text-white);
+}
+
+.card-info span {
+    font-size: 0.85rem;
+    color: var(--text-gray);
+    text-transform: uppercase;
+    font-weight: 500;
+    letter-spacing: 1px;
+}
+
+.card-icon {
+    font-size: 2.8rem;
+    color: var(--primary-red);
+    opacity: 0.9;
+}
+
+/* --- TABELAS --- */
+.table-custom {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: var(--text-white);
+}
+.table-custom thead th {
+    background-color: #1a1a1a;
+    color: var(--text-white);
+    text-align: left;
+    padding: 18px;
+    border-bottom: 2px solid var(--primary-red);
+    text-transform: uppercase;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 1px;
+}
+.table-custom tbody td {
+    padding: 18px;
+    border-bottom: 1px solid var(--border-color);
+    background-color: var(--bg-card);
+}
+.table-custom tbody tr:hover td {
+    background-color: #222;
+}
+
+/* --- BOTÕES --- */
+.btn-red {
+    background-color: var(--primary-red);
+    color: white;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-family: 'Poppins', sans-serif;
+    display: inline-flex;
+    align-items: center;
+    transition: 0.2s;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.btn-red:hover { background-color: var(--red-hover); color: white; }
+.btn-red i { margin-right: 10px; }
+
+.btn-outline {
+    border: 1px solid #444;
+    color: var(--text-white);
+    padding: 6px 12px;
+    border-radius: 4px;
+    text-decoration: none;
+    margin-left: 5px;
+    transition: 0.2s;
+}
+.btn-outline:hover { background-color: var(--primary-red); border-color: var(--primary-red); color: white; }

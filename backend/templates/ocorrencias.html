@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Livro de Ocorrências</h2>
+    <button class="btn-avelar" style="background-color: var(--danger); color: white;">+ Nova Ocorrência</button>
+</div>
+
+<div class="card-avelar">
+    {% for ocorrencia in ocorrencias %}
+    <div style="border-left: 4px solid var(--danger); padding: 10px 15px; margin-bottom: 15px; background: #fff5f5;">
+        <div style="display: flex; justify-content: space-between;">
+            <strong>{{ ocorrencia.data.strftime('%d/%m/%Y') }} - {{ ocorrencia.cliente.nome if ocorrencia.cliente else 'Ronda Geral' }}</strong>
+            <small>{{ ocorrencia.funcionario_responsavel }}</small>
+        </div>
+        <p style="margin: 5px 0;">{{ ocorrencia.descricao }}</p>
+    </div>
+    {% else %}
+    <p style="text-align: center; color: #777;">Nenhuma ocorrência registrada recentemente.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 style="font-weight: 300;">Painel de Controle</h2>
+        <span class="text-muted">{{ now }}</span>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card-custom" style="border-left: 5px solid #28a745;">
+                <div class="card-info">
+                    <span>Receita Mensal</span>
+                    <h3 class="text-success">R$ {{ "%.2f"|format(receita) }}</h3>
+                </div>
+                <div class="card-icon text-success">
+                    <i class="fas fa-arrow-up"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-custom" style="border-left: 5px solid #dc3545;">
+                <div class="card-info">
+                    <span>Despesas Empresa</span>
+                    <h3 class="text-danger">R$ {{ "%.2f"|format(despesa) }}</h3>
+                </div>
+                <div class="card-icon text-danger">
+                    <i class="fas fa-arrow-down"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-custom" style="border-left: 5px solid #ffc107;">
+                <div class="card-info">
+                    <span>Saldo em Caixa</span>
+                    <h3 style="color: {{ 'green' if saldo >= 0 else 'red' }}">
+                        R$ {{ "%.2f"|format(saldo) }}
+                    </h3>
+                </div>
+                <div class="card-icon text-warning">
+                    <i class="fas fa-wallet"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card-custom">
+                <div class="card-info">
+                    <span>Contratos Ativos</span>
+                    <h3>{{ total_clientes }}</h3>
+                </div>
+                <div class="card-icon">
+                    <i class="fas fa-users"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card-custom d-block p-0">
+        <div class="card-header border-bottom border-dark p-3">
+            <h5 class="m-0"><i class="fas fa-exclamation-circle text-danger me-2"></i> Últimas Ocorrências</h5>
+        </div>
+        <div class="table-responsive">
+            <table class="table-custom mb-0">
+                <thead>
+                    <tr>
+                        <th>Data</th>
+                        <th>Cliente</th>
+                        <th>Descrição</th>
+                        <th>Responsável</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for ocorrencia in ocorrencias %}
+                    <tr>
+                        <td>{{ ocorrencia.data.strftime('%d/%m/%Y') }}</td>
+                        <td>{{ ocorrencia.cliente.nome }}</td>
+                        <td>{{ ocorrencia.descricao }}</td>
+                        <td>{{ ocorrencia.responsavel }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="4" class="text-center py-4 text-muted">Nenhuma ocorrência recente registrada.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+{% endblock %}

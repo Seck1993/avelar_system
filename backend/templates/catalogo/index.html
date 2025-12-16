@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+{% block content %}
+    <h3><i class="fas fa-tags text-danger"></i> Tabela de Preços e Serviços</h3>
+    <hr>
+    
+    <div class="card-custom">
+        <table class="table-custom">
+            <thead>
+                <tr>
+                    <th>Tipo</th>
+                    <th>Item / Serviço</th>
+                    <th>Descrição Técnica</th>
+                    <th>Valor (R$)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in itens %}
+                <tr>
+                    <td><span class="badge {{ 'bg-warning text-dark' if item.tipo == 'Produto' else 'bg-info' }}">{{ item.tipo }}</span></td>
+                    <td style="font-weight: bold;">{{ item.item }}</td>
+                    <td class="text-muted">{{ item.descricao }}</td>
+                    <td class="text-success fw-bold">R$ {{ "%.2f"|format(item.valor) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+{% endblock %}

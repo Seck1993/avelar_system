@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center;">
+    <h2>Gestão de Clientes</h2>
+    <button class="btn-avelar">+ Novo Cliente</button>
+</div>
+
+<div class="card-avelar">
+    <table style="width: 100%; border-collapse: collapse;">
+        <thead>
+            <tr style="background-color: #eee; text-align: left;">
+                <th style="padding: 10px;">Nome</th>
+                <th style="padding: 10px;">Rota</th>
+                <th style="padding: 10px;">Serviço</th>
+                <th style="padding: 10px;">Contato</th>
+                <th style="padding: 10px;">Status</th>
+                <th style="padding: 10px;">Ações</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for cliente in clientes %}
+            <tr style="border-bottom: 1px solid #ddd;">
+                <td style="padding: 10px;">{{ cliente.nome }}</td>
+                <td style="padding: 10px;"><span style="background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">{{ cliente.rota }}</span></td>
+                <td style="padding: 10px;">{{ cliente.tipo_servico }}</td>
+                <td style="padding: 10px;">{{ cliente.telefone }}</td>
+                <td style="padding: 10px;">
+                    {% if cliente.ativo %}
+                        <span style="color: green; font-weight: bold;">Ativo</span>
+                    {% else %}
+                        <span style="color: red;">Inativo</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 10px;">
+                    <button style="border: none; background: none; cursor: pointer;"><i class="fas fa-edit"></i></button>
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="6" style="padding: 20px; text-align: center;">Nenhum cliente cadastrado.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}
