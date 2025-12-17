@@ -22,9 +22,7 @@ def create_app():
     app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql://{db_usuario}:{db_senha}@{db_host}/{db_nome}'
     app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
     
-    # CORREÇÃO DO ERRO DE DESCONEXÃO (4031)
-    # pool_recycle: Renova a conexão a cada 280 segundos (antes do limite de 300s do servidor)
-    # pool_pre_ping: Testa a conexão antes de usar. Se caiu, reconecta automaticamente.
+    # CORREÇÃO DO ERRO DE DESCONEXÃO (Pool Recycle)
     app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
         'pool_recycle': 280,
         'pool_pre_ping': True,
@@ -59,7 +57,6 @@ def create_app():
                 return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
             return dict(sistema=conf)
         except Exception:
-            # Em caso de erro fatal no banco, retorna padrão para não quebrar o login
             return dict(sistema={'nome_empresa': 'Avelar Security', 'cor_primaria': '#d32f2f'})
 
     # --- PWA SERVICE WORKER & OFFLINE ---
@@ -150,7 +147,7 @@ def create_app():
                              total_clientes=Cliente.query.filter_by(ativo=True).count(),
                              ocorrencias=Ocorrencia.query.order_by(Ocorrencia.data.desc()).limit(5).all())
 
-    # --- ROTAS CRUD (COMPLETAS) ---
+    # --- ROTAS CRUD (ADMIN) ---
 
     @app.route('/clientes')
     @login_required
@@ -216,7 +213,6 @@ def create_app():
     def nova_despesa():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         if request.method == 'POST':
-            # Implementar lógica
             return redirect(url_for('financeiro'))
         return render_template('nova_despesa.html')
 
@@ -232,20 +228,36 @@ def create_app():
     def nova_venda():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         if request.method == 'POST':
-            # Implementar lógica
             return redirect(url_for('vendas'))
         clientes_opt = Cliente.query.filter_by(ativo=True).all()
         produtos_opt = Catalogo.query.all()
         return render_template('nova_venda.html', clientes=clientes_opt, produtos=produtos_opt)
     
+    # --- ROTA PAINEIS DO CLIENTE (CORRIGIDA) ---
     @app.route('/painel_cliente')
     @login_required
     def painel_cliente():
-        if current_user.cargo == 'Admin': return redirect(url_for('home'))
+        # Se for Admin, manda para a home normal
+        if current_user.cargo == 'Admin': 
+            return redirect(url_for('home'))
+        
+        cliente = None
         mensalidades = []
+
+        # Pega o cliente vinculado ao usuário logado
         if current_user.cliente_id:
-             mensalidades = Mensalidade.query.filter_by(cliente_id=current_user.cliente_id).all()
-        return render_template('painel_cliente.html', mensalidades=mensalidades)
+             cliente = Cliente.query.get(current_user.cliente_id)
+        
+        # Se encontrou o cliente, busca as mensalidades dele
+        if cliente:
+             mensalidades = Mensalidade.query.filter_by(cliente_id=cliente.id).all()
+        else:
+             # Se o usuário é "Cliente" mas não tem vínculo na tabela, dá erro ou desloga
+             flash('Erro: Sua conta não está vinculada a um cadastro de cliente.', 'danger')
+             return redirect(url_for('login'))
+
+        # ATENÇÃO: Nome do arquivo corrigido para 'cliente_painel.html' e variavel 'cliente' enviada
+        return render_template('cliente_painel.html', cliente=cliente, mensalidades=mensalidades)
 
     @app.route('/ocorrencias')
     @login_required
@@ -259,6 +271,7 @@ def create_app():
     def nova_ocorrencia():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         if request.method == 'POST':
+            # Lógica simples para exemplo
             return redirect(url_for('listar_ocorrencias'))
         return render_template('nova_ocorrencia.html')
 
