@@ -1,47 +1,62 @@
-{% extends "base.html" %}
-
+{% extends 'base.html' %}
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center;">
-    <h2>Gestão de Clientes</h2>
-    <button class="btn-avelar">+ Novo Cliente</button>
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="fas fa-users text-danger"></i> Clientes</h3>
+    <a href="{{ url_for('novo_cliente') }}" class="btn btn-danger"><i class="fas fa-plus"></i> Novo Cliente</a>
 </div>
 
-<div class="card-avelar">
-    <table style="width: 100%; border-collapse: collapse;">
-        <thead>
-            <tr style="background-color: #eee; text-align: left;">
-                <th style="padding: 10px;">Nome</th>
-                <th style="padding: 10px;">Rota</th>
-                <th style="padding: 10px;">Serviço</th>
-                <th style="padding: 10px;">Contato</th>
-                <th style="padding: 10px;">Status</th>
-                <th style="padding: 10px;">Ações</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for cliente in clientes %}
-            <tr style="border-bottom: 1px solid #ddd;">
-                <td style="padding: 10px;">{{ cliente.nome }}</td>
-                <td style="padding: 10px;"><span style="background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; font-size: 0.8em;">{{ cliente.rota }}</span></td>
-                <td style="padding: 10px;">{{ cliente.tipo_servico }}</td>
-                <td style="padding: 10px;">{{ cliente.telefone }}</td>
-                <td style="padding: 10px;">
-                    {% if cliente.ativo %}
-                        <span style="color: green; font-weight: bold;">Ativo</span>
-                    {% else %}
-                        <span style="color: red;">Inativo</span>
-                    {% endif %}
-                </td>
-                <td style="padding: 10px;">
-                    <button style="border: none; background: none; cursor: pointer;"><i class="fas fa-edit"></i></button>
-                </td>
-            </tr>
-            {% else %}
-            <tr>
-                <td colspan="6" style="padding: 20px; text-align: center;">Nenhum cliente cadastrado.</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+<div class="card-custom p-0">
+    <div class="table-responsive">
+        <table class="table align-middle table-hover mb-0">
+            <thead>
+                <tr>
+                    <th>Cliente</th>
+                    <th>Rota / Bairro</th>
+                    <th>Contato</th>
+                    <th>Monitoramento</th>
+                    <th>Mensalidade</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cliente in clientes %}
+                <tr>
+                    <td>
+                        <div class="fw-bold text-white">{{ cliente.nome }}</div>
+                        <small class="text-muted">{{ cliente.endereco }}</small>
+                    </td>
+                    <td>
+                        {% if cliente.bairro_obj %}
+                            <span class="badge bg-dark border border-secondary text-white">{{ cliente.bairro_obj.nome }}</span>
+                        {% else %}
+                            <span class="text-muted small">Sem Rota</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="text-white">{{ cliente.telefone }}</div>
+                        <small class="text-muted">Venc: dia {{ cliente.dia_vencimento }}</small>
+                    </td>
+                    <td class="text-white">{{ cliente.app_monitoramento }}</td>
+                    <td class="fw-bold text-success">R$ {{ "%.2f"|format(cliente.valor_mensal) }}</td>
+                    <td>
+                        {% if cliente.ativo %}
+                        <span class="badge bg-success">Ativo</span>
+                        {% else %}
+                        <span class="badge bg-danger">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-light"><i class="fas fa-edit"></i></button>
+                    </td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="7" class="text-center py-4 text-muted">Nenhum cliente cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
 {% endblock %}

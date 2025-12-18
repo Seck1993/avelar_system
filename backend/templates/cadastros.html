@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h3 class="mb-4"><i class="fas fa-database text-danger"></i> Cadastros Gerais</h3>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card-custom mb-4">
+            <h5 class="text-warning mb-3">1. Locais de Atuação</h5>
+            
+            <form method="POST" class="mb-3 d-flex gap-2">
+                <input type="hidden" name="tipo_cadastro" value="cidade">
+                <input type="text" name="nome" class="form-control" placeholder="Nova Cidade (Ex: Vera Cruz)" required>
+                <button class="btn btn-outline-light">Add</button>
+            </form>
+
+            <form method="POST" class="d-flex gap-2 align-items-center mb-3">
+                <input type="hidden" name="tipo_cadastro" value="bairro">
+                <select name="cidade_id" class="form-select" style="max-width: 150px;" required>
+                    {% for c in cidades %}
+                    <option value="{{ c.id }}">{{ c.nome }}</option>
+                    {% endfor %}
+                </select>
+                <input type="text" name="nome" class="form-control" placeholder="Novo Bairro/Rota" required>
+                <button class="btn btn-red">Salvar</button>
+            </form>
+
+            <hr>
+            <div style="max-height: 300px; overflow-y: auto;">
+                <table class="table-custom table-sm">
+                    <thead><tr><th>Cidade</th><th>Bairro / Rota</th></tr></thead>
+                    <tbody>
+                        {% for b in bairros %}
+                        <tr>
+                            <td class="text-muted">{{ b.cidade.nome }}</td>
+                            <td>{{ b.nome }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="card-custom mb-4">
+            <h5 class="text-info mb-3">2. Funcionários</h5>
+            <form method="POST" class="d-flex gap-2 mb-3">
+                <input type="hidden" name="tipo_cadastro" value="funcionario">
+                <input type="text" name="nome" class="form-control" placeholder="Nome Completo" required>
+                <input type="text" name="cargo" class="form-control" placeholder="Cargo" style="max-width: 120px;">
+                <button class="btn btn-info text-white">Add</button>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+                {% for f in funcionarios %}
+                <span class="badge bg-secondary p-2">{{ f.nome }} ({{ f.cargo }})</span>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card-custom">
+            <h5 class="text-success mb-3">3. Frota de Veículos</h5>
+            <form method="POST" class="d-flex gap-2 mb-3">
+                <input type="hidden" name="tipo_cadastro" value="veiculo">
+                <input type="text" name="descricao" class="form-control" placeholder="Modelo (Ex: Fiat Uno)" required>
+                <input type="text" name="placa" class="form-control" placeholder="Placa" style="max-width: 120px;">
+                <button class="btn btn-success text-white">Add</button>
+            </form>
+            <div class="d-flex flex-wrap gap-2">
+                {% for v in veiculos %}
+                <span class="badge bg-dark border border-secondary p-2">
+                    <i class="fas fa-car me-1"></i> {{ v.descricao }} <small class="text-muted">{{ v.placa }}</small>
+                </span>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

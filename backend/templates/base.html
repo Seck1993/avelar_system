@@ -11,7 +11,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Avelar Segurança Patrimonial">
-    
     <link rel="apple-touch-icon" sizes="180x180" href="{{ url_for('static', filename='img/Logo.png') }}">
     <link rel="icon" type="image/png" href="{{ url_for('static', filename='img/Logo.png') }}">
 
@@ -25,10 +24,9 @@
         }
 
         body {
-            color: #fff;
+            color: #e0e0e0; /* Texto claro padrão */
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
-            /* Fundo do Dashboard */
             {% if sistema.fundo_dashboard %}
             background: url("{{ url_for('static', filename=sistema.fundo_dashboard) }}") no-repeat center center fixed;
             background-size: cover;
@@ -36,6 +34,33 @@
             background-color: #0a0a0a;
             {% endif %}
         }
+
+        /* FORÇAR TEXTO CLARO EM TUDO */
+        h1, h2, h3, h4, h5, h6 { color: #ffffff !important; }
+        .card-custom { color: #ffffff !important; background: rgba(20, 20, 20, 0.95); border: 1px solid #333; }
+        
+        /* Tabelas - Forçar branco */
+        table, th, td { color: #ffffff !important; }
+        .table-hover tbody tr:hover { color: #fff !important; background-color: rgba(255,255,255,0.1) !important; }
+        thead th { background-color: #1a1a1a !important; color: #fff !important; border-bottom: 2px solid #444; }
+        
+        /* Formulários */
+        label { color: #ccc !important; }
+        .form-control, .form-select {
+            background-color: #222 !important;
+            border: 1px solid #444 !important;
+            color: #fff !important;
+        }
+        .form-control:focus, .form-select:focus {
+            background-color: #333 !important;
+            color: #fff !important;
+            border-color: var(--primary-red) !important;
+            box-shadow: none !important;
+        }
+        .form-control::placeholder { color: #666; }
+        
+        /* Textos secundários */
+        .text-muted { color: #bbb !important; }
 
         #content {
             background: rgba(10, 10, 10, 0.92);
@@ -56,7 +81,6 @@
     <nav id="sidebar">
         <div class="sidebar-header">
             <img src="{{ url_for('static', filename='img/Logo.png') }}" alt="Logo" class="logo-custom" onerror="this.style.display='none'">
-            
             <h4 class="brand-title">{{ sistema.nome_empresa }}</h4>
             <span class="brand-subtitle">Gestão Integrada</span>
         </div>
@@ -71,7 +95,7 @@
                     <i class="fas fa-shield-alt"></i> Operacional
                 </a>
                 <ul class="collapse list-unstyled" id="menuOperacional">
-                    <li><a href="{{ url_for('clientes') }}">Carteira de Clientes</a></li>
+                    <li><a href="{{ url_for('clientes') }}">Clientes</a></li>
                     <li><a href="{{ url_for('listar_ocorrencias') }}">Livro de Ocorrências</a></li>
                 </ul>
             </li>
@@ -82,8 +106,7 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuComercial">
                     <li><a href="{{ url_for('vendas') }}">Vendas & Instalações</a></li>
-                    <li><a href="{{ url_for('catalogo') }}">Tabela de Preços</a></li>
-                </ul>
+                    </ul>
             </li>
 
             <li>
@@ -101,6 +124,7 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuCadastros">
                     <li><a href="{{ url_for('novo_cliente') }}">Novo Cliente</a></li>
+                    <li><a href="{{ url_for('cadastros') }}">Cadastros Gerais</a></li>
                 </ul>
             </li>
 
@@ -160,21 +184,13 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
-    // Menu Toggle
     document.getElementById('sidebarCollapse')?.addEventListener('click', function () {
         document.getElementById('sidebar').classList.toggle('active');
     });
 
-    // PWA: Service Worker
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            navigator.serviceWorker.register('/service-worker.js')
-            .then((registration) => {
-                console.log('SW registrado:', registration.scope);
-            })
-            .catch((err) => {
-                console.log('SW falhou:', err);
-            });
+            navigator.serviceWorker.register('/service-worker.js');
         });
     }
 </script>
