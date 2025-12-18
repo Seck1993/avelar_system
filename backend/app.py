@@ -43,8 +43,6 @@ def create_app():
     
     # --- FUNÇÃO PARA POPULAR CIDADES RS ---
     def popular_cidades_rs():
-        # Lista resumida das principais cidades para não travar o banco
-        # Você pode adicionar mais manualmente depois
         principais = [
             "Santa Cruz do Sul", "Vera Cruz", "Rio Pardo", "Venâncio Aires", 
             "Candelária", "Passo do Sobrado", "Vale do Sol", "Lajeado", 
@@ -54,11 +52,8 @@ def create_app():
             for nome in principais:
                 db.session.add(Cidade(nome=nome, uf='RS'))
             db.session.commit()
-            print("Cidades do RS inseridas com sucesso!")
 
-    # Executa ao iniciar (dentro do contexto)
     with app.app_context():
-        # db.create_all() # Cuidado: Só descomente se for recriar tabelas
         try:
             popular_cidades_rs()
         except:
@@ -71,13 +66,13 @@ def create_app():
     @app.route('/offline')
     def offline(): return render_template('offline.html')
 
-    # --- NOVA TELA: CADASTROS GERAIS (MODULAR) ---
+    # --- NOVA TELA: CADASTROS GERAIS (ATUALIZADO) ---
     @app.route('/cadastros', methods=['GET', 'POST'])
     @login_required
     def cadastros():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         
-        # Se for POST, identifica o que está sendo criado
+        # POST: CRIAÇÃO
         if request.method == 'POST':
             tipo = request.form.get('tipo_cadastro')
             
@@ -97,14 +92,84 @@ def create_app():
             flash('Cadastro realizado com sucesso!', 'success')
             return redirect(url_for('cadastros'))
 
-        # GET: Carrega as listas
+        # GET: LEITURA (Incluindo inativos para gestão)
         return render_template('cadastros.html', 
                              cidades=Cidade.query.order_by(Cidade.nome).all(),
                              bairros=Bairro.query.join(Cidade).order_by(Cidade.nome, Bairro.nome).all(),
-                             funcionarios=Funcionario.query.filter_by(ativo=True).all(),
-                             veiculos=Veiculo.query.filter_by(ativo=True).all())
+                             funcionarios=Funcionario.query.order_by(Funcionario.nome).all(), 
+                             veiculos=Veiculo.query.all())
 
-    # --- HOME DASHBOARD (ADAPTADO PARA MODULAR) ---
+    # --- ROTAS DE EDIÇÃO E EXCLUSÃO (ESSENCIAIS PARA CORRIGIR O ERRO) ---
+    @app.route('/excluir_cadastro/<tipo>/<int:id>')
+    @login_required
+    def excluir_cadastro(tipo, id):
+        if current_user.cargo != 'Admin': return redirect(url_for('home'))
+        
+        try:
+            if tipo == 'funcionario':
+                item = Funcionario.query.get(id)
+                item.ativo = not item.ativo # Toggle Ativo/Inativo
+                msg = f'Funcionário {item.nome} {"ativado" if item.ativo else "desativado"}.'
+                
+            elif tipo == 'veiculo':
+                item = Veiculo.query.get(id)
+                item.ativo = not item.ativo # Toggle Ativo/Inativo
+                msg = f'Veículo {item.descricao} {"ativado" if item.ativo else "desativado"}.'
+                
+            elif tipo == 'bairro':
+                item = Bairro.query.get(id)
+                db.session.delete(item) # Exclusão real
+                msg = 'Rota removida com sucesso.'
+                
+            elif tipo == 'cidade':
+                item = Cidade.query.get(id)
+                db.session.delete(item) # Exclusão real
+                msg = 'Cidade removida.'
+            
+            db.session.commit()
+            flash(msg, 'success')
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Erro ao excluir: Verifique se há clientes ou registros vinculados a este item.', 'danger')
+
+        return redirect(url_for('cadastros'))
+
+    @app.route('/editar_cadastro', methods=['POST'])
+    @login_required
+    def editar_cadastro():
+        if current_user.cargo != 'Admin': return redirect(url_for('home'))
+        
+        tipo = request.form.get('tipo')
+        id_item = request.form.get('id')
+        campo1 = request.form.get('campo1') # Nome / Descrição
+        campo2 = request.form.get('campo2') # Cargo / Placa
+        cidade_id = request.form.get('cidade_id')
+        
+        try:
+            if tipo == 'funcionario':
+                f = Funcionario.query.get(id_item)
+                f.nome = campo1
+                f.cargo = campo2
+            
+            elif tipo == 'veiculo':
+                v = Veiculo.query.get(id_item)
+                v.descricao = campo1
+                v.placa = campo2
+            
+            elif tipo == 'bairro':
+                b = Bairro.query.get(id_item)
+                b.nome = campo1
+                if cidade_id: b.cidade_id = cidade_id
+                
+            db.session.commit()
+            flash('Alteração salva com sucesso!', 'success')
+        except Exception as e:
+            flash(f'Erro ao editar: {str(e)}', 'danger')
+            
+        return redirect(url_for('cadastros'))
+
+    # --- HOME DASHBOARD ---
     @app.route('/')
     @login_required
     def home():
@@ -112,19 +177,15 @@ def create_app():
         hoje = datetime.now()
         mes_atual = hoje.strftime('%m/%Y')
         
-        # Receita total
         receita_total = (db.session.query(func.sum(Mensalidade.valor)).filter_by(status='Pago', mes_referencia=mes_atual).scalar() or 0) + \
                         (db.session.query(func.sum(Venda.valor_total)).filter(func.extract('month', Venda.data)==hoje.month).scalar() or 0)
 
-        # Despesa total
         despesa_total = db.session.query(func.sum(Despesa.valor)).filter(
             func.extract('month', Despesa.data)==hoje.month, 
             func.extract('year', Despesa.data)==hoje.year, 
             Despesa.tipo=='Empresa'
         ).scalar() or 0
 
-        # Agrupamento de Receita por Bairro (Rota)
-        # Pega os Top 5 Bairros com mais receita
         receita_por_bairro = db.session.query(Bairro.nome, func.sum(Mensalidade.valor))\
             .join(Cliente, Cliente.bairro_id == Bairro.id)\
             .join(Mensalidade, Mensalidade.cliente_id == Cliente.id)\
@@ -153,7 +214,6 @@ def create_app():
     def nova_despesa():
         if current_user.cargo != 'Admin': return redirect(url_for('painel_cliente'))
         
-        # Trata campos opcionais (veiculo/funcionario pode vir vazio)
         vec_id = request.form.get('veiculo_id')
         func_id = request.form.get('funcionario_id')
 
@@ -184,7 +244,7 @@ def create_app():
             try:
                 novo = Cliente(
                     nome=request.form['nome'],
-                    bairro_id=request.form['bairro_id'], # Pega o ID do Bairro selecionado
+                    bairro_id=request.form['bairro_id'],
                     endereco=request.form['endereco'],
                     complemento=request.form.get('complemento'),
                     valor_mensal=float(request.form['valor_mensal'] if request.form['valor_mensal'] else 0),
@@ -197,12 +257,10 @@ def create_app():
             except Exception as e:
                 flash(f'Erro: {str(e)}', 'danger')
         
-        # Envia cidades e bairros para o formulário
         return render_template('novo_cliente.html', 
                              cidades=Cidade.query.order_by(Cidade.nome).all(),
                              bairros=Bairro.query.all())
 
-    # --- DEMAIS ROTAS (Config, Vendas, Ocorrencias) MANTIDAS IGUAIS ---
     @app.route('/configuracoes', methods=['GET', 'POST'])
     @login_required
     def configuracoes():
