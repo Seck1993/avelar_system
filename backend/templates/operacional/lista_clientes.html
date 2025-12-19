@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h3><i class="fas fa-users"></i> Gestão de Clientes</h3>
+    <input type="text" id="searchCli" onkeyup="filtrar()" class="form-control w-25 bg-dark text-white border-secondary" placeholder="Pesquisar...">
+</div>
+
+<div class="card-custom p-0">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0" id="tabCli">
+            <thead>
+                <tr>
+                    <th>Nome</th>
+                    <th>Rota</th>
+                    <th>Endereço</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in clientes %}
+                <tr>
+                    <td class="fw-bold">{{ c.nome }}</td>
+                    <td><span class="badge bg-secondary">{{ c.bairro.nome if c.bairro else '-' }}</span></td>
+                    <td class="text-muted small">{{ c.endereco }}</td>
+                    <td class="text-end">
+                        <button class="btn btn-sm btn-outline-info border-0" data-bs-toggle="modal" data-bs-target="#editCli{{c.id}}"><i class="fas fa-edit"></i></button>
+                        <a href="{{ url_for('excluir_cadastro', tipo='cliente', id=c.id) }}" class="btn btn-sm btn-outline-danger border-0" onclick="return confirm('Excluir?')"><i class="fas fa-trash"></i></a>
+                    </td>
+                </tr>
+
+                <div class="modal fade" id="editCli{{c.id}}" tabindex="-1">
+                    <div class="modal-dialog">
+                        <div class="modal-content bg-dark text-white border-secondary">
+                            <form action="{{ url_for('editar_cadastro') }}" method="POST">
+                                <div class="modal-header"><h5 class="modal-title">Editar Cliente</h5></div>
+                                <div class="modal-body">
+                                    <input type="hidden" name="tipo" value="cliente">
+                                    <input type="hidden" name="id" value="{{ c.id }}">
+                                    <label>Nome</label><input type="text" name="campo1" value="{{ c.nome }}" class="form-control mb-2">
+                                    <label>Endereço</label><input type="text" name="campo2" value="{{ c.endereco }}" class="form-control mb-2">
+                                    <label>Rota</label>
+                                    <select name="bairro_id" class="form-select bg-dark text-white border-secondary">
+                                        {% for b in bairros %}
+                                        <option value="{{ b.id }}" {{ 'selected' if c.bairro_id == b.id else '' }}>{{ b.nome }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="modal-footer"><button class="btn btn-primary">Salvar</button></div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<script>
+function filtrar() {
+    var input = document.getElementById("searchCli");
+    var filter = input.value.toUpperCase();
+    var table = document.getElementById("tabCli");
+    var tr = table.getElementsByTagName("tr");
+    for (var i = 1; i < tr.length; i++) {
+        var td = tr[i].getElementsByTagName("td")[0];
+        if (td) {
+            var txtValue = td.textContent || td.innerText;
+            if (txtValue.toUpperCase().indexOf(filter) > -1) { tr[i].style.display = ""; } else { tr[i].style.display = "none"; }
+        }
+    }
+}
+</script>
+{% endblock %}

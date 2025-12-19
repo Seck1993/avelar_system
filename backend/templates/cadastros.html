@@ -3,284 +3,173 @@
 
 <div class="row mb-3">
     <div class="col-12">
-        <h3><i class="fas fa-database text-danger"></i> Cadastros Gerais</h3>
+        <h3><i class="fas fa-plus-circle text-danger"></i> Central de Cadastros</h3>
+        <p class="text-muted">Utilize esta área para inserir novos registros. Os vínculos financeiros são feitos no menu <strong>Comercial</strong>.</p>
     </div>
 </div>
 
 <ul class="nav nav-tabs border-secondary mb-4" id="cadastroTab" role="tablist">
-    <li class="nav-item">
-        <button class="nav-link active text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#locais">
-            <i class="fas fa-map-marker-alt text-warning"></i> Locais e Rotas
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#equipe">
-            <i class="fas fa-user-tie text-info"></i> Funcionários
-        </button>
-    </li>
-    <li class="nav-item">
-        <button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#frota">
-            <i class="fas fa-car text-success"></i> Frota
-        </button>
-    </li>
+    <li class="nav-item"><button class="nav-link active text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#clientes"><i class="fas fa-users text-light"></i> Novo Cliente</button></li>
+    <li class="nav-item"><button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#equipe"><i class="fas fa-user-tie text-info"></i> Nova Equipe</button></li>
+    <li class="nav-item"><button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#frota"><i class="fas fa-car text-success"></i> Nova Frota</button></li>
+    <li class="nav-item"><button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#locais"><i class="fas fa-map-marker-alt text-warning"></i> Novas Rotas</button></li>
 </ul>
 
 <div class="tab-content" id="cadastroTabContent">
 
-    <div class="tab-pane fade show active" id="locais">
-        <div class="row">
-            <div class="col-md-8">
-                <div class="card-custom">
-                    <h5 class="text-warning mb-3">Gerenciar Rotas / Bairros</h5>
-                    
-                    <form method="POST" class="d-flex gap-2 align-items-center mb-4">
-                        <input type="hidden" name="tipo_cadastro" value="bairro">
-                        <select name="cidade_id" class="form-select bg-dark text-white border-secondary" required>
-                            <option value="" disabled selected>Selecione a Cidade...</option>
-                            {% for c in cidades %}
-                            <option value="{{ c.id }}">{{ c.nome }}</option>
+    <div class="tab-pane fade show active" id="clientes">
+        <div class="card-custom">
+            <h5 class="text-white mb-4">Cadastrar Cliente (Dados Pessoais)</h5>
+            <form method="POST">
+                <input type="hidden" name="tipo_cadastro" value="cliente">
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label>Nome Completo / Razão Social</label>
+                        <input type="text" name="nome" class="form-control" required>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Rota / Bairro</label>
+                        <select name="bairro_id" class="form-select" required>
+                            <option value="">Selecione...</option>
+                            {% for b in bairros %}
+                            <option value="{{ b.id }}">{{ b.cidade.nome }} - {{ b.nome }}</option>
                             {% endfor %}
                         </select>
-                        <input type="text" name="nome" class="form-control" placeholder="Nome do Bairro ou Rota" required>
-                        <button class="btn btn-warning text-dark fw-bold">Salvar</button>
-                    </form>
-
-                    <div style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-dark table-hover table-sm align-middle">
-                            <thead>
-                                <tr>
-                                    <th>Cidade</th>
-                                    <th>Rota / Bairro</th>
-                                    <th class="text-end">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for b in bairros %}
-                                <tr>
-                                    <td class="text-muted">{{ b.cidade.nome }}</td>
-                                    <td>{{ b.nome }}</td>
-                                    <td class="text-end">
-                                        <button class="btn btn-sm btn-outline-info border-0" 
-                                                onclick="abrirModalEditar('bairro', '{{ b.id }}', '{{ b.nome }}', '{{ b.cidade_id }}')">
-                                            <i class="fas fa-edit"></i>
-                                        </button>
-                                        <a href="{{ url_for('excluir_cadastro', tipo='bairro', id=b.id) }}" 
-                                           class="btn btn-sm btn-outline-danger border-0"
-                                           onclick="return confirm('Tem certeza? Isso pode afetar clientes vinculados.')">
-                                            <i class="fas fa-trash"></i>
-                                        </a>
-                                    </td>
-                                </tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
+                    </div>
+                    <div class="col-md-8 mb-3">
+                        <label>Endereço</label>
+                        <input type="text" name="endereco" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label>Complemento</label>
+                        <input type="text" name="complemento" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>Telefone / WhatsApp</label>
+                        <input type="text" name="telefone" class="form-control">
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <label>App Monitoramento (Info Técnica)</label>
+                        <select name="app_monitoramento" class="form-select">
+                            <option>Nenhum</option>
+                            <option>ISIC Lite</option>
+                            <option>Intelbras Guardian</option>
+                            <option>Hik-Connect</option>
+                        </select>
+                    </div>
+                    
+                    <div class="col-12 text-end">
+                        <button class="btn btn-light fw-bold px-4">Salvar Cadastro</button>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-md-4">
-                <div class="card-custom border-secondary h-100">
-                    <h6 class="text-secondary mb-3"><small>CIDADES CADASTRADAS</small></h6>
-                    <form method="POST" class="input-group input-group-sm mb-3">
-                        <input type="hidden" name="tipo_cadastro" value="cidade">
-                        <input type="text" name="nome" class="form-control" placeholder="Nova Cidade..." required>
-                        <button class="btn btn-outline-light">Add</button>
-                    </form>
-
-                    <div style="max-height: 400px; overflow-y: auto;">
-                        <ul class="list-group list-group-flush bg-transparent">
-                            {% for c in cidades %}
-                            <li class="list-group-item bg-transparent text-white d-flex justify-content-between align-items-center py-1 ps-0">
-                                {{ c.nome }}
-                                <a href="{{ url_for('excluir_cadastro', tipo='cidade', id=c.id) }}" 
-                                   class="text-danger small"
-                                   onclick="return confirm('Excluir cidade? Somente se não houver rotas vinculadas.')">
-                                    <i class="fas fa-times"></i>
-                                </a>
-                            </li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                </div>
-            </div>
+            </form>
         </div>
     </div>
 
     <div class="tab-pane fade" id="equipe">
         <div class="card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="text-info">Equipe Avelar</h5>
-                <form method="POST" class="d-flex gap-2">
-                    <input type="hidden" name="tipo_cadastro" value="funcionario">
-                    <input type="text" name="nome" class="form-control" placeholder="Nome Completo" required>
-                    <input type="text" name="cargo" class="form-control" placeholder="Cargo (Ex: Vigilante)" style="width: 180px;">
-                    <button class="btn btn-info text-white">Adicionar</button>
-                </form>
-            </div>
-            
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Nome</th>
-                            <th>Cargo</th>
-                            <th>Status</th>
-                            <th class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for f in funcionarios %}
-                        <tr>
-                            <td>{{ f.nome }}</td>
-                            <td><span class="badge bg-secondary">{{ f.cargo }}</span></td>
-                            <td>
-                                {% if f.ativo %}
-                                <span class="badge bg-success">Ativo</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inativo</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-info border-0" 
-                                        onclick="abrirModalEditar('funcionario', '{{ f.id }}', '{{ f.nome }}', '{{ f.cargo }}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <a href="{{ url_for('excluir_cadastro', tipo='funcionario', id=f.id) }}" 
-                                   class="btn btn-sm btn-outline-danger border-0" title="Desativar/Ativar">
-                                    <i class="fas fa-power-off"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+            <h5 class="text-info mb-4">Cadastrar Funcionário</h5>
+            <form method="POST">
+                <input type="hidden" name="tipo_cadastro" value="funcionario">
+                <div class="row">
+                    <div class="col-md-5 mb-3">
+                        <label>Nome Completo</label>
+                        <input type="text" name="nome" class="form-control" required>
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label>Cargo</label>
+                        <input type="text" name="cargo" class="form-control" required>
+                    </div>
+                    <div class="col-md-4 mb-3">
+                        <label>Telefone</label>
+                        <input type="text" name="telefone" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label>CPF</label>
+                        <input type="text" name="cpf" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label>RG</label>
+                        <input type="text" name="rg" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label>CNH</label>
+                        <input type="text" name="cnh" class="form-control">
+                    </div>
+                    <div class="col-md-3 mb-3">
+                        <label>Data Nascimento</label>
+                        <input type="date" name="data_nascimento" class="form-control">
+                    </div>
+                    <div class="col-12 mb-3">
+                        <label>Endereço Residencial</label>
+                        <input type="text" name="endereco" class="form-control">
+                    </div>
+                    <div class="col-12 text-end">
+                        <button class="btn btn-info text-white fw-bold px-4">Salvar Funcionário</button>
+                    </div>
+                </div>
+            </form>
         </div>
     </div>
 
     <div class="tab-pane fade" id="frota">
         <div class="card-custom">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="text-success">Frota de Veículos</h5>
-                <form method="POST" class="d-flex gap-2">
-                    <input type="hidden" name="tipo_cadastro" value="veiculo">
-                    <input type="text" name="descricao" class="form-control" placeholder="Modelo (Ex: Fiat Uno)" required>
-                    <input type="text" name="placa" class="form-control" placeholder="Placa" style="width: 150px;">
-                    <button class="btn btn-success text-white">Adicionar</button>
-                </form>
-            </div>
-
-            <div class="table-responsive">
-                <table class="table table-dark table-hover align-middle">
-                    <thead>
-                        <tr>
-                            <th>Veículo</th>
-                            <th>Placa</th>
-                            <th>Status</th>
-                            <th class="text-end">Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for v in veiculos %}
-                        <tr>
-                            <td><i class="fas fa-car me-2"></i> {{ v.descricao }}</td>
-                            <td class="text-muted">{{ v.placa }}</td>
-                            <td>
-                                {% if v.ativo %}
-                                <span class="badge bg-success">Operante</span>
-                                {% else %}
-                                <span class="badge bg-danger">Inoperante</span>
-                                {% endif %}
-                            </td>
-                            <td class="text-end">
-                                <button class="btn btn-sm btn-outline-info border-0" 
-                                        onclick="abrirModalEditar('veiculo', '{{ v.id }}', '{{ v.descricao }}', '{{ v.placa }}')">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <a href="{{ url_for('excluir_cadastro', tipo='veiculo', id=v.id) }}" 
-                                   class="btn btn-sm btn-outline-danger border-0" title="Desativar/Ativar">
-                                    <i class="fas fa-power-off"></i>
-                                </a>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="modal fade" id="modalEditar" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content bg-dark text-white border-secondary">
-            <div class="modal-header border-secondary">
-                <h5 class="modal-title">Editar Cadastro</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form action="{{ url_for('editar_cadastro') }}" method="POST">
-                <div class="modal-body">
-                    <input type="hidden" name="id" id="edit_id">
-                    <input type="hidden" name="tipo" id="edit_tipo">
-                    
-                    <div class="mb-3">
-                        <label class="form-label" id="label_campo1">Nome / Descrição</label>
-                        <input type="text" name="campo1" id="edit_campo1" class="form-control" required>
-                    </div>
-                    
-                    <div class="mb-3" id="div_campo2">
-                        <label class="form-label" id="label_campo2">Cargo / Placa</label>
-                        <input type="text" name="campo2" id="edit_campo2" class="form-control">
-                    </div>
-
-                    <div class="mb-3 d-none" id="div_cidade_select">
-                        <label class="form-label">Cidade</label>
-                        <select name="cidade_id" id="edit_cidade_id" class="form-select bg-dark text-white border-secondary">
-                            {% for c in cidades %}
-                            <option value="{{ c.id }}">{{ c.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
+            <h5 class="text-success mb-4">Cadastrar Veículo</h5>
+            <form method="POST" class="row align-items-end">
+                <input type="hidden" name="tipo_cadastro" value="veiculo">
+                <div class="col-md-6 mb-3">
+                    <label>Modelo / Descrição</label>
+                    <input type="text" name="descricao" class="form-control" placeholder="Ex: Fiat Uno 2020" required>
                 </div>
-                <div class="modal-footer border-secondary">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+                <div class="col-md-4 mb-3">
+                    <label>Placa</label>
+                    <input type="text" name="placa" class="form-control" required>
+                </div>
+                <div class="col-md-2 mb-3">
+                    <button class="btn btn-success text-white fw-bold w-100">Salvar</button>
                 </div>
             </form>
         </div>
     </div>
+
+    <div class="tab-pane fade" id="locais">
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card-custom h-100">
+                    <h5 class="text-warning mb-3">1. Cadastrar Rota/Bairro</h5>
+                    <form method="POST">
+                        <input type="hidden" name="tipo_cadastro" value="bairro">
+                        <div class="mb-3">
+                            <label>Cidade Pertencente</label>
+                            <select name="cidade_id" class="form-select" required>
+                                <option value="">Selecione...</option>
+                                {% for c in cidades %}
+                                <option value="{{ c.id }}">{{ c.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label>Nome do Bairro / Rota</label>
+                            <input type="text" name="nome" class="form-control" required>
+                        </div>
+                        <button class="btn btn-warning text-dark fw-bold w-100">Salvar Rota</button>
+                    </form>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card-custom h-100">
+                    <h5 class="text-secondary mb-3">2. Cadastrar Cidade</h5>
+                    <form method="POST">
+                        <input type="hidden" name="tipo_cadastro" value="cidade">
+                        <div class="mb-3">
+                            <label>Nome da Cidade</label>
+                            <input type="text" name="nome" class="form-control" required>
+                        </div>
+                        <button class="btn btn-outline-light w-100">Salvar Cidade</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
-
-<script>
-function abrirModalEditar(tipo, id, campo1, campo2) {
-    document.getElementById('edit_id').value = id;
-    document.getElementById('edit_tipo').value = tipo;
-    document.getElementById('edit_campo1').value = campo1;
-    
-    // Reseta visibilidade
-    document.getElementById('div_campo2').classList.remove('d-none');
-    document.getElementById('div_cidade_select').classList.add('d-none');
-
-    if(tipo === 'funcionario') {
-        document.getElementById('label_campo1').innerText = 'Nome Completo';
-        document.getElementById('label_campo2').innerText = 'Cargo';
-        document.getElementById('edit_campo2').value = campo2;
-    } 
-    else if(tipo === 'veiculo') {
-        document.getElementById('label_campo1').innerText = 'Modelo do Veículo';
-        document.getElementById('label_campo2').innerText = 'Placa';
-        document.getElementById('edit_campo2').value = campo2;
-    }
-    else if(tipo === 'bairro') {
-        document.getElementById('label_campo1').innerText = 'Nome da Rota / Bairro';
-        document.getElementById('div_campo2').classList.add('d-none'); // Esconde campo de texto 2
-        document.getElementById('div_cidade_select').classList.remove('d-none'); // Mostra select de cidade
-        document.getElementById('edit_cidade_id').value = campo2; // Aqui campo2 é o ID da cidade
-    }
-    
-    var modal = new bootstrap.Modal(document.getElementById('modalEditar'));
-    modal.show();
-}
-</script>
-
 {% endblock %}

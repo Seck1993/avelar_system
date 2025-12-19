@@ -1,172 +1,236 @@
 {% extends 'base.html' %}
 {% block content %}
     
-    <div class="d-flex justify-content-between align-items-center mb-3">
-        <h3><i class="fas fa-wallet text-warning"></i> Financeiro & Gasto Diário</h3>
-        <button class="btn btn-danger" data-bs-toggle="modal" data-bs-target="#modalDespesa">
-            <i class="fas fa-minus-circle"></i> Lançar Despesa
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap">
+    <h3><i class="fas fa-chart-pie text-warning"></i> Fluxo de Caixa</h3>
+    
+    <div class="btn-group">
+        <a href="{{ url_for('financeiro', periodo='semana') }}" class="btn btn-outline-secondary {{ 'active' if filtro_atual == 'semana' }}">Semana</a>
+        <a href="{{ url_for('financeiro', periodo='mes') }}" class="btn btn-outline-secondary {{ 'active' if filtro_atual == 'mes' }}">Mês</a>
+        <a href="{{ url_for('financeiro', periodo='ano') }}" class="btn btn-outline-secondary {{ 'active' if filtro_atual == 'ano' }}">Ano</a>
+        <a href="{{ url_for('financeiro', periodo='tudo') }}" class="btn btn-outline-secondary {{ 'active' if filtro_atual == 'tudo' }}">Total</a>
+    </div>
+</div>
+
+<div class="row mb-4">
+    <div class="col-md-4">
+        <div class="card-custom border-start border-success border-5 p-3">
+            <h6 class="text-secondary text-uppercase mb-1">Total Entradas</h6>
+            <h2 class="text-success fw-bold m-0">R$ {{ "%.2f"|format(total_entrada) }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom border-start border-danger border-5 p-3">
+            <h6 class="text-secondary text-uppercase mb-1">Total Saídas</h6>
+            <h2 class="text-danger fw-bold m-0">R$ {{ "%.2f"|format(total_saida) }}</h2>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card-custom bg-dark border {{ 'border-success' if saldo >= 0 else 'border-danger' }} p-3" style="border: 1px solid;">
+            <h6 class="text-white-50 text-uppercase mb-1">Saldo Líquido</h6>
+            <h2 class="{{ 'text-success' if saldo >= 0 else 'text-danger' }} fw-bold m-0">
+                R$ {{ "%.2f"|format(saldo) }}
+            </h2>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-6 d-flex gap-2 mb-2">
+        <button class="btn btn-success w-50 fw-bold" data-bs-toggle="modal" data-bs-target="#modalEntrada">
+            <i class="fas fa-arrow-up"></i> NOVA ENTRADA
+        </button>
+        <button class="btn btn-danger w-50 fw-bold" data-bs-toggle="modal" data-bs-target="#modalSaida">
+            <i class="fas fa-arrow-down"></i> NOVA SAÍDA
         </button>
     </div>
+    <div class="col-md-6">
+        <input type="text" id="searchFluxo" class="form-control bg-dark text-white border-secondary" 
+               onkeyup="filtrarTabela()" placeholder="🔍 Pesquisar por data, descrição, funcionário, valor...">
+    </div>
+</div>
 
-    <ul class="nav nav-tabs border-secondary mb-3" id="finTab" role="tablist">
-        <li class="nav-item">
-            <button class="nav-link active text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#diario">
-                Gasto Diário (Lançamentos)
-            </button>
-        </li>
-        <li class="nav-item">
-            <button class="nav-link text-white bg-dark border-secondary" data-bs-toggle="tab" data-bs-target="#mensalidades">
-                Controle de Mensalidades
-            </button>
-        </li>
-    </ul>
+<div class="card-custom p-0">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover mb-0 align-middle" id="tabelaFluxo">
+            <thead>
+                <tr>
+                    <th>Data</th>
+                    <th>Tipo</th>
+                    <th>Categoria</th>
+                    <th>Descrição / Vínculo</th>
+                    <th>Valor</th>
+                    <th class="text-end">Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in fluxo %}
+                <tr>
+                    <td class="text-nowrap">{{ item.data.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        {% if item.tipo == 'Entrada' %}
+                        <span class="badge bg-success"><i class="fas fa-arrow-up"></i> Entrada</span>
+                        {% else %}
+                        <span class="badge bg-danger"><i class="fas fa-arrow-down"></i> Saída</span>
+                        {% endif %}
+                    </td>
+                    <td><span class="badge bg-secondary">{{ item.categoria }}</span></td>
+                    <td>
+                        <div class="fw-bold text-white">{{ item.descricao }}</div>
+                        {% if item.vinculo != '-' %}
+                        <small class="text-info"><i class="fas fa-link"></i> {{ item.vinculo }}</small>
+                        {% endif %}
+                    </td>
+                    <td class="fw-bold {{ 'text-success' if item.tipo == 'Entrada' else 'text-danger' }}">
+                        {{ '+' if item.tipo == 'Entrada' else '-' }} R$ {{ "%.2f"|format(item.valor) }}
+                    </td>
+                    <td class="text-end">
+                        {% if item.origem == 'Lançamento' %}
+                        <a href="{{ url_for('excluir_cadastro', tipo='despesa', id=item.id) }}" 
+                           class="btn btn-sm btn-outline-dark text-danger border-0"
+                           onclick="return confirm('Excluir este lançamento financeiro?')">
+                            <i class="fas fa-trash"></i>
+                        </a>
+                        {% else %}
+                        <span class="text-muted small" title="Venda Automática"><i class="fas fa-lock"></i></span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="6" class="text-center p-4 text-muted">Nenhum lançamento neste período.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
-    <div class="tab-content">
-        <div class="tab-pane fade show active" id="diario">
-            <div class="card-custom p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Data</th>
-                                <th>Categoria</th>
-                                <th>Descrição / Vínculo</th>
-                                <th>Valor</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for d in despesas %}
-                            <tr>
-                                <td class="text-white">{{ d.data.strftime('%d/%m/%Y') }}</td>
-                                <td><span class="badge bg-secondary">{{ d.categoria }}</span></td>
-                                <td class="text-white">
-                                    {{ d.descricao }}
-                                    {% if d.veiculo_id %}
-                                    <br><small class="text-info"><i class="fas fa-car"></i> Frota</small>
-                                    {% endif %}
-                                    {% if d.funcionario_id %}
-                                    <br><small class="text-warning"><i class="fas fa-user"></i> Equipe</small>
-                                    {% endif %}
-                                </td>
-                                <td class="text-danger fw-bold">- R$ {{ "%.2f"|format(d.valor) }}</td>
-                            </tr>
-                            {% else %}
-                            <tr><td colspan="4" class="text-center p-3 text-muted">Nenhuma despesa registrada.</td></tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
+<div class="modal fade" id="modalEntrada" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-success">
+                <h5 class="modal-title text-success"><i class="fas fa-arrow-up"></i> Registrar Entrada Extra</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
             </div>
-        </div>
-
-        <div class="tab-pane fade" id="mensalidades">
-            <div class="card-custom p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead>
-                            <tr>
-                                <th>Vencimento</th>
-                                <th>Cliente</th>
-                                <th>Rota</th>
-                                <th>Valor</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for m in mensalidades %}
-                            <tr>
-                                <td class="text-white">{{ m.mes_referencia }}</td>
-                                <td class="text-white">{{ m.cliente.nome }}</td>
-                                <td>
-                                    {% if m.cliente.bairro_obj %}
-                                        {{ m.cliente.bairro_obj.nome }}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td class="text-white">R$ {{ "%.2f"|format(m.valor) }}</td>
-                                <td>
-                                    <span class="badge {{ 'bg-success' if m.status == 'Pago' else 'bg-warning text-dark' }}">
-                                        {{ m.status }}
-                                    </span>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+            <form action="/novo_lancamento" method="POST">
+                <input type="hidden" name="tipo_operacao" value="Entrada">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Data</label>
+                        <input type="date" name="data" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Categoria</label>
+                        <select name="categoria" class="form-select">
+                            <option>Serviço Extra</option>
+                            <option>Venda de Equipamento</option>
+                            <option>Investimento</option>
+                            <option>Outros</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" class="form-control" placeholder="Ex: Venda de sucata" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Valor (R$)</label>
+                        <input type="number" step="0.01" name="valor" class="form-control text-success fw-bold" required>
+                    </div>
                 </div>
-            </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-success w-100">Confirmar Entrada</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <div class="modal fade" id="modalDespesa" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content bg-dark text-white border-secondary">
-                <div class="modal-header border-secondary">
-                    <h5 class="modal-title">Novo Lançamento</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="/nova_despesa" method="POST">
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label>Data</label>
-                            <input type="date" name="data" class="form-control" required>
-                        </div>
-                        <div class="mb-3">
-                            <label>Categoria</label>
-                            <select name="categoria" class="form-select" required>
-                                <option>Combustível</option>
-                                <option>Manutenção Veículos</option>
-                                <option>Funcionários / Diárias</option>
-                                <option>Impostos / Taxas</option>
-                                <option>Alimentação</option>
-                                <option>Outros</option>
+<div class="modal fade" id="modalSaida" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content bg-dark text-white border-secondary">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger"><i class="fas fa-arrow-down"></i> Registrar Saída / Despesa</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form action="/novo_lancamento" method="POST">
+                <input type="hidden" name="tipo_operacao" value="Saida">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Data</label>
+                        <input type="date" name="data" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Categoria</label>
+                        <select name="categoria" class="form-select">
+                            <option>Combustível</option>
+                            <option>Manutenção Veículo</option>
+                            <option>Salário / Diária</option>
+                            <option>Alimentação</option>
+                            <option>Material de Escritório</option>
+                            <option>Impostos</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Descrição</label>
+                        <input type="text" name="descricao" class="form-control" required>
+                    </div>
+                    
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="small text-muted">Veículo (Opcional)</label>
+                            <select name="veiculo_id" class="form-select form-select-sm">
+                                <option value="">- Nenhum -</option>
+                                {% for v in veiculos %}
+                                <option value="{{ v.id }}">{{ v.descricao }} - {{ v.placa }}</option>
+                                {% endfor %}
                             </select>
                         </div>
-                        <div class="row mb-3">
-                            <div class="col-6">
-                                <label><small>Veículo (Opcional)</small></label>
-                                <select name="veiculo_id" class="form-select form-select-sm">
-                                    <option value="">- Nenhum -</option>
-                                    {% for v in veiculos %}
-                                    <option value="{{ v.id }}">{{ v.descricao }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                            <div class="col-6">
-                                <label><small>Funcionário (Opcional)</small></label>
-                                <select name="funcionario_id" class="form-select form-select-sm">
-                                    <option value="">- Nenhum -</option>
-                                    {% for f in funcionarios %}
-                                    <option value="{{ f.id }}">{{ f.nome }}</option>
-                                    {% endfor %}
-                                </select>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label>Descrição</label>
-                            <input type="text" name="descricao" class="form-control" required>
-                        </div>
-                        <div class="row">
-                            <div class="col-6 mb-3">
-                                <label>Valor (R$)</label>
-                                <input type="number" step="0.01" name="valor" class="form-control" required>
-                            </div>
-                            <div class="col-6 mb-3">
-                                <label>Tipo</label>
-                                <select name="tipo" class="form-select">
-                                    <option value="Empresa">Empresa</option>
-                                    <option value="Pessoal">Pessoal</option>
-                                </select>
-                            </div>
+                        <div class="col-6">
+                            <label class="small text-muted">Funcionário (Opcional)</label>
+                            <select name="funcionario_id" class="form-select form-select-sm">
+                                <option value="">- Nenhum -</option>
+                                {% for f in funcionarios %}
+                                <option value="{{ f.id }}">{{ f.nome }}</option>
+                                {% endfor %}
+                            </select>
                         </div>
                     </div>
-                    <div class="modal-footer border-secondary">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                        <button type="submit" class="btn btn-danger">Salvar</button>
+
+                    <div class="mb-3">
+                        <label>Valor (R$)</label>
+                        <input type="number" step="0.01" name="valor" class="form-control text-danger fw-bold" required>
                     </div>
-                </form>
-            </div>
+                </div>
+                <div class="modal-footer border-secondary">
+                    <button type="submit" class="btn btn-danger w-100">Confirmar Saída</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
+
+<script>
+function filtrarTabela() {
+    var input, filter, table, tr, td, i, txtValue;
+    input = document.getElementById("searchFluxo");
+    filter = input.value.toUpperCase();
+    table = document.getElementById("tabelaFluxo");
+    tr = table.getElementsByTagName("tr");
+
+    for (i = 1; i < tr.length; i++) {
+        var achou = false;
+        var tds = tr[i].getElementsByTagName("td");
+        for(var j=0; j < tds.length; j++){
+            if(tds[j]){
+                txtValue = tds[j].textContent || tds[j].innerText;
+                if (txtValue.toUpperCase().indexOf(filter) > -1) {
+                    achou = true;
+                    break; 
+                }
+            }
+        }
+        tr[i].style.display = achou ? "" : "none";
+    }
+}
+</script>
+
 {% endblock %}

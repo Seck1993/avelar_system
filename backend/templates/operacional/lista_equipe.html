@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-user-tie text-info"></i> Gestão de Equipe</h3>
+
+<div class="row">
+    {% for f in funcionarios %}
+    <div class="col-md-4 col-lg-3 mb-4">
+        <div class="card-custom text-center p-3 h-100 border-top border-info border-3">
+            <div class="mb-3">
+                <div style="width: 80px; height: 80px; background: #333; border-radius: 50%; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #aaa;">
+                    <i class="fas fa-user"></i>
+                </div>
+            </div>
+            <h5 class="text-white mb-1">{{ f.nome }}</h5>
+            <span class="badge bg-secondary mb-3">{{ f.cargo }}</span>
+            
+            <p class="text-start text-muted small mb-1"><i class="fas fa-phone me-2"></i> {{ f.telefone or '-' }}</p>
+            <p class="text-start text-muted small mb-3"><i class="fas fa-id-card me-2"></i> {{ f.cpf or '-' }}</p>
+            
+            <div class="d-flex justify-content-center gap-2 mt-auto">
+                <button class="btn btn-sm btn-outline-light" data-bs-toggle="modal" data-bs-target="#editFunc{{f.id}}">Editar</button>
+                <a href="{{ url_for('excluir_cadastro', tipo='funcionario', id=f.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir?')"><i class="fas fa-trash"></i></a>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="editFunc{{f.id}}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <form action="{{ url_for('editar_cadastro') }}" method="POST">
+                    <div class="modal-header"><h5 class="modal-title">Editar {{ f.nome }}</h5></div>
+                    <div class="modal-body text-start">
+                        <input type="hidden" name="tipo" value="funcionario">
+                        <input type="hidden" name="id" value="{{ f.id }}">
+                        <label>Nome</label><input type="text" name="campo1" value="{{ f.nome }}" class="form-control mb-2">
+                        <label>Cargo</label><input type="text" name="campo2" value="{{ f.cargo }}" class="form-control mb-2">
+                        <label>Telefone</label><input type="text" name="telefone" value="{{ f.telefone }}" class="form-control mb-2">
+                        <label>CPF</label><input type="text" name="cpf" value="{{ f.cpf }}" class="form-control mb-2">
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-primary">Salvar</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

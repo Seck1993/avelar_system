@@ -1,0 +1,39 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3 class="mb-4"><i class="fas fa-car text-success"></i> Frota de Veículos</h3>
+
+<div class="row">
+    {% for v in veiculos %}
+    <div class="col-md-6 mb-3">
+        <div class="card-custom d-flex align-items-center p-3 border-start border-success border-4">
+            <div class="me-3 text-success" style="font-size: 2.5rem;"><i class="fas fa-car-side"></i></div>
+            <div class="flex-grow-1">
+                <h5 class="m-0 text-white">{{ v.descricao }}</h5>
+                <small class="text-muted fw-bold">PLACA: {{ v.placa }}</small>
+            </div>
+            <div>
+                <button class="btn btn-sm btn-outline-light me-1" data-bs-toggle="modal" data-bs-target="#editVeic{{v.id}}"><i class="fas fa-edit"></i></button>
+                <a href="{{ url_for('excluir_cadastro', tipo='veiculo', id=v.id) }}" class="btn btn-sm btn-outline-danger" onclick="return confirm('Excluir?')"><i class="fas fa-trash"></i></a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="modal fade" id="editVeic{{v.id}}" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content bg-dark text-white border-secondary">
+                <form action="{{ url_for('editar_cadastro') }}" method="POST">
+                    <div class="modal-header"><h5 class="modal-title">Editar Veículo</h5></div>
+                    <div class="modal-body">
+                        <input type="hidden" name="tipo" value="veiculo">
+                        <input type="hidden" name="id" value="{{ v.id }}">
+                        <label>Modelo</label><input type="text" name="campo1" value="{{ v.descricao }}" class="form-control mb-2">
+                        <label>Placa</label><input type="text" name="campo2" value="{{ v.placa }}" class="form-control mb-2">
+                    </div>
+                    <div class="modal-footer"><button class="btn btn-success">Salvar</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% endblock %}

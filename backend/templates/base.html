@@ -24,7 +24,7 @@
         }
 
         body {
-            color: #e0e0e0; /* Texto claro padrão */
+            color: #e0e0e0;
             font-family: 'Poppins', sans-serif;
             overflow-x: hidden;
             {% if sistema.fundo_dashboard %}
@@ -39,12 +39,10 @@
         h1, h2, h3, h4, h5, h6 { color: #ffffff !important; }
         .card-custom { color: #ffffff !important; background: rgba(20, 20, 20, 0.95); border: 1px solid #333; }
         
-        /* Tabelas - Forçar branco */
         table, th, td { color: #ffffff !important; }
         .table-hover tbody tr:hover { color: #fff !important; background-color: rgba(255,255,255,0.1) !important; }
         thead th { background-color: #1a1a1a !important; color: #fff !important; border-bottom: 2px solid #444; }
         
-        /* Formulários */
         label { color: #ccc !important; }
         .form-control, .form-select {
             background-color: #222 !important;
@@ -59,7 +57,6 @@
         }
         .form-control::placeholder { color: #666; }
         
-        /* Textos secundários */
         .text-muted { color: #bbb !important; }
 
         #content {
@@ -90,12 +87,21 @@
                 <a href="{{ url_for('home') }}"><i class="fas fa-chart-line"></i> Visão Geral</a>
             </li>
 
+            <li class="{{ 'active' if request.endpoint == 'cadastros' else '' }}">
+                <a href="{{ url_for('cadastros') }}">
+                    <i class="fas fa-plus-circle"></i> Central de Cadastros
+                </a>
+            </li>
+
             <li>
-                <a href="#menuOperacional" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
+                <a href="#menuOperacional" data-bs-toggle="collapse" aria-expanded="true" class="dropdown-toggle">
                     <i class="fas fa-shield-alt"></i> Operacional
                 </a>
-                <ul class="collapse list-unstyled" id="menuOperacional">
-                    <li><a href="{{ url_for('clientes') }}">Clientes</a></li>
+                <ul class="collapse list-unstyled show" id="menuOperacional">
+                    <li><a href="{{ url_for('op_clientes') }}">Gestão de Clientes</a></li>
+                    <li><a href="{{ url_for('op_equipe') }}">Equipe & RH</a></li>
+                    <li><a href="{{ url_for('op_frota') }}">Frota de Veículos</a></li>
+                    <li><a href="{{ url_for('op_rotas') }}">Rotas e Locais</a></li>
                     <li><a href="{{ url_for('listar_ocorrencias') }}">Livro de Ocorrências</a></li>
                 </ul>
             </li>
@@ -106,7 +112,8 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuComercial">
                     <li><a href="{{ url_for('vendas') }}">Vendas & Instalações</a></li>
-                    </ul>
+                    <li><a href="{{ url_for('catalogo') }}">Catálogo de Preços</a></li>
+                </ul>
             </li>
 
             <li>
@@ -115,16 +122,6 @@
                 </a>
                 <ul class="collapse list-unstyled" id="menuFinanceiro">
                     <li><a href="{{ url_for('financeiro') }}">Fluxo de Caixa</a></li>
-                </ul>
-            </li>
-
-            <li>
-                <a href="#menuCadastros" data-bs-toggle="collapse" aria-expanded="false" class="dropdown-toggle">
-                    <i class="fas fa-folder-plus"></i> Cadastros
-                </a>
-                <ul class="collapse list-unstyled" id="menuCadastros">
-                    <li><a href="{{ url_for('novo_cliente') }}">Novo Cliente</a></li>
-                    <li><a href="{{ url_for('cadastros') }}">Cadastros Gerais</a></li>
                 </ul>
             </li>
 
@@ -147,12 +144,12 @@
             <div style="display: flex; align-items: center; margin-left: auto;">
                 <div style="text-align: right; margin-right: 15px;">
                     <div style="font-weight: bold; color: white;">{{ current_user.nome }}</div>
-                    <div style="font-size: 0.8rem; color: #b0b0b0;">Administrador</div>
+                    <div style="font-size: 0.8rem; color: #b0b0b0;">{{ current_user.cargo }}</div>
                 </div>
                 <div class="dropdown">
                     <a href="#" class="d-flex align-items-center text-white text-decoration-none dropdown-toggle" data-bs-toggle="dropdown">
                         <div style="width: 40px; height: 40px; background-color: var(--primary-red); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: white;">
-                            A
+                            <i class="fas fa-user"></i>
                         </div>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end shadow">

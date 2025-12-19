@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3><i class="fas fa-file-invoice-dollar text-success"></i> Criar Orçamento</h3>
+        <a href="{{ url_for('vendas') }}" class="btn btn-outline-light">Cancelar</a>
+    </div>
+
+    <form action="{{ url_for('salvar_orcamento') }}" method="POST" id="formOrcamento">
+        <div class="row">
+            <div class="col-md-4">
+                <div class="card-custom mb-3">
+                    <h5 class="text-white mb-3">Dados do Cliente</h5>
+                    <div class="mb-3">
+                        <label>Cliente</label>
+                        <select name="cliente_id" class="form-select bg-dark text-white border-secondary" required>
+                            <option value="">Selecione...</option>
+                            {% for c in clientes %}
+                            <option value="{{ c.id }}">{{ c.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label>Observações / Condições de Pagamento</label>
+                        <textarea name="observacoes" class="form-control bg-dark text-white border-secondary" rows="4" placeholder="Ex: Entrada de 50% + 2x no cartão. Validade 5 dias."></textarea>
+                    </div>
+                </div>
+
+                <div class="card-custom bg-dark border-success">
+                    <h5 class="text-success">Resumo</h5>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Produtos:</span>
+                        <span id="resumoProdutos">R$ 0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Serviços/Mão de Obra:</span>
+                        <span id="resumoServicos">R$ 0.00</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between">
+                        <h4 class="text-white">TOTAL:</h4>
+                        <h4 class="text-success fw-bold" id="resumoTotal">R$ 0.00</h4>
+                    </div>
+                    <input type="hidden" name="total_final" id="inputTotalFinal">
+                    <button type="submit" class="btn btn-success w-100 fw-bold mt-3">SALVAR ORÇAMENTO</button>
+                </div>
+            </div>
+
+            <div class="col-md-8">
+                <div class="card-custom">
+                    <h5 class="text-info mb-3">Adicionar Itens ao Orçamento</h5>
+                    
+                    <div class="row align-items-end mb-3 bg-dark p-2 rounded border border-secondary">
+                        <div class="col-md-5">
+                            <label class="small text-muted">Item do Catálogo</label>
+                            <select id="selectItem" class="form-select bg-dark text-white border-secondary">
+                                <option value="">Selecione...</option>
+                                {% for item in catalogo %}
+                                <option value="{{ item.id }}" 
+                                        data-nome="{{ item.item }}" 
+                                        data-tipo="{{ item.tipo }}" 
+                                        data-preco="{{ item.valor }}"
+                                        data-instalacao="{{ item.valor_instalacao }}">
+                                    [{{ item.tipo }}] {{ item.item }} - R$ {{ "%.2f"|format(item.valor) }}
+                                </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <label class="small text-muted">Qtd</label>
+                            <input type="number" id="inputQtd" class="form-control bg-dark text-white border-secondary" value="1" min="1">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="small text-muted">Preço Unit. (Editável)</label>
+                            <input type="number" step="0.01" id="inputPreco" class="form-control bg-dark text-white border-secondary">
+                        </div>
+                        <div class="col-md-2">
+                            <button type="button" class="btn btn-info w-100" onclick="adicionarLinha()">Adicionar</button>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-dark table-striped align-middle">
+                            <thead>
+                                <tr>
+                                    <th>Item</th>
+                                    <th>Qtd</th>
+                                    <th>Unitário</th>
+                                    <th>Subtotal</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tabelaItens">
+                                </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+// Array para armazenar os itens temporariamente
+let itensOrcamento = [];
+
+// Ao mudar o select, preenche o preço sugerido
+document.getElementById('selectItem').addEventListener('change', function() {
+    let option = this.options[this.selectedIndex];
+    if(option.value) {
+        let preco = parseFloat(option.getAttribute('data-preco'));
+        document.getElementById('inputPreco').value = preco.toFixed(2);
+    }
+});
+
+function adicionarLinha() {
+    let select = document.getElementById('selectItem');
+    let option = select.options[select.selectedIndex];
+    
+    if(!option.value) return alert("Selecione um item!");
+    
+    let id = option.value;
+    let nome = option.getAttribute('data-nome');
+    let tipo = option.getAttribute('data-tipo');
+    let qtd = parseFloat(document.getElementById('inputQtd').value);
+    let preco = parseFloat(document.getElementById('inputPreco').value);
+    
+    if(qtd <= 0) return alert("Quantidade inválida");
+
+    let subtotal = qtd * preco;
+
+    // Adiciona ao array
+    itensOrcamento.push({
+        catalogo_id: id,
+        nome: nome,
+        tipo: tipo,
+        quantidade: qtd,
+        valor_unitario: preco,
+        subtotal: subtotal
+    });
+
+    renderizarTabela();
+}
+
+function removerLinha(index) {
+    itensOrcamento.splice(index, 1);
+    renderizarTabela();
+}
+
+function renderizarTabela() {
+    let tbody = document.getElementById('tabelaItens');
+    tbody.innerHTML = '';
+    
+    let totalProd = 0;
+    let totalServ = 0;
+
+    itensOrcamento.forEach((item, index) => {
+        if(item.tipo === 'Produto') totalProd += item.subtotal;
+        else totalServ += item.subtotal;
+
+        let tr = `
+            <tr>
+                <td>${item.nome} <input type="hidden" name="itens_id[]" value="${item.catalogo_id}"></td>
+                <td>${item.quantidade} <input type="hidden" name="itens_qtd[]" value="${item.quantidade}"></td>
+                <td>R$ ${item.valor_unitario.toFixed(2)} <input type="hidden" name="itens_valor[]" value="${item.valor_unitario}"></td>
+                <td class="fw-bold text-success">R$ ${item.subtotal.toFixed(2)}</td>
+                <td><button type="button" class="btn btn-sm btn-danger" onclick="removerLinha(${index})"><i class="fas fa-times"></i></button></td>
+            </tr>
+        `;
+        tbody.innerHTML += tr;
+    });
+
+    // Atualiza Totais
+    document.getElementById('resumoProdutos').innerText = 'R$ ' + totalProd.toFixed(2);
+    document.getElementById('resumoServicos').innerText = 'R$ ' + totalServ.toFixed(2);
+    let totalGeral = totalProd + totalServ;
+    document.getElementById('resumoTotal').innerText = 'R$ ' + totalGeral.toFixed(2);
+    document.getElementById('inputTotalFinal').value = totalGeral;
+}
+</script>
+
+{% endblock %}
